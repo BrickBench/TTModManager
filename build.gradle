@@ -1,0 +1,67 @@
+plugins {
+    id 'application'
+}
+
+group 'com.opengg'
+version '0.0.1'
+
+sourceCompatibility = 1.15
+targetCompatibility = 1.15
+
+mainClassName = 'com.opengg.modmanager.TTModManager'
+
+java {
+    modularity.inferModulePath = true
+}
+
+compileJava {
+    options.incremental = true
+    options.fork = true
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath, '--enable-preview'
+        ]
+        classpath = files()
+    }
+}
+
+tasks.withType(JavaExec){
+    doFirst {
+        jvmArgs = [
+                '--module-path', classpath.asPath, '--enable-preview'
+        ]
+        classpath = files()
+    }
+}
+
+application  {
+    mainModule = 'com.opengg.modmanager'
+}
+
+ext.os = org.gradle.internal.os.OperatingSystem.current()
+
+ext.artifactName = 'TTMM'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+test {
+    useJUnitPlatform()
+}
