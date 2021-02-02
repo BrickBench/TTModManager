@@ -134,7 +134,6 @@ public class TTModManager extends JFrame {
                         mod.getPath();
 
                 bottomBar.setProgressString("Copying mod " + mod.getPath());
-                JOptionPane.showMessageDialog(null, modPath);
                 FileCopier.copyFileOrFolder(new File(modPath), new File(dstDir), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
                 bottomBar.setProgress(++progress);
 
@@ -163,7 +162,7 @@ public class TTModManager extends JFrame {
 
     public void runMod(){
         try {
-            Runtime.getRuntime().exec(Util.getFromMainDirectory("Game Instance\\LEGOStarWarsSaga.exe"), null, new File(Util.getFromMainDirectory("Game Instance\\")));
+            Runtime.getRuntime().exec(new String[]{(Util.getFromMainDirectory("Game Instance\\LEGOStarWarsSaga.exe"))}, null, new File(Util.getFromMainDirectory("Game Instance\\")));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Failed to launch game executable: " + e.getMessage());
         }

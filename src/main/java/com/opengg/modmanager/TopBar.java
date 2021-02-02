@@ -23,6 +23,7 @@ public class TopBar extends JMenuBar {
         setModdedGameDirectory.setToolTipText("Sets the directory for TTMM to install the modded game instance to.");
 
         fileMenu.add(setGameDirectory);
-        fileMenu.add(setModdedGameDirectory);
+        //fileMenu.add(setModdedGameDirectory);
+
     }
 }

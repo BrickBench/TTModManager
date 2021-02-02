@@ -22,9 +22,11 @@ public class ManagerProperties {
                 var in = new FileInputStream(file);
 
                 PROPERTIES.load(in);
-                PROPERTIES.put("outputInstall", Util.getFromMainDirectory(""));
+                PROPERTIES.put("outputInstall", Util.getFromMainDirectory("Game Instance"));
 
                 in.close();
+
+                save();
             }else{
                 var in = new FileInputStream(file);
 
