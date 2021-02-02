@@ -73,7 +73,7 @@ task packageDistribution(type: Zip) {
     from("$buildDir/jpackage/")
 }
 
-tasks.jlink.finalizedBy(packageDistribution)
+tasks.jpackageImage.finalizedBy(packageDistribution)
 
 
 repositories {
