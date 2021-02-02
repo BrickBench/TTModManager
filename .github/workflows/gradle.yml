@@ -19,7 +19,7 @@ jobs:
         with:
           java-version: 15
       - name: Package to EXE
-        run: ./gradlew jpackage -PisCI
+        run: ./gradlew jpackageImage -PisCI
         env:
           TOKEN: ${{ secrets.PERSONAL_REPO_KEY }}
 
