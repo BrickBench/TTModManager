@@ -1,8 +1,11 @@
 package com.opengg.modmanager;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.io.File;
+import java.util.Objects;
 import java.util.Optional;
 
 public class Util {
@@ -20,7 +23,8 @@ public class Util {
                 case FILE -> JFileChooser.FILES_ONLY;
                 case BOTH -> JFileChooser.FILES_AND_DIRECTORIES;
             });
-            chooser.setCurrentDirectory(new File(defaultPath));
+            chooser.setCurrentDirectory(new File(Objects.requireNonNullElse(defaultPath, "")));
+            if(!filter.isEmpty()) chooser.setFileFilter(new FileNameExtensionFilter("Mods", filter));
             int returnVal = chooser.showOpenDialog(null);
             if(returnVal == JFileChooser.APPROVE_OPTION){
                 return Optional.of(chooser.getSelectedFile());
@@ -30,6 +34,9 @@ public class Util {
         }
     }
 
+    public static String getFromMainDirectory(String path){
+        return FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "\\TT Mod Manager\\" + path;
+    }
 
     public enum LoadType{FILE, DIRECTORY, BOTH}
 }

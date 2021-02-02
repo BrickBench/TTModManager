@@ -1,26 +1,15 @@
 package com.opengg.modmanager;
 
 import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Vector;
 
 public class ModTable extends JTable {
     private DefaultTableModel model;
 
-    private static ImageIcon folderIcon;
-    private static ImageIcon zipIcon;
-
     public ModTable(){
         super(new MyTableModel());
-
-        folderIcon = new ImageIcon("resource/folder.png");
-        zipIcon = new ImageIcon("resource/zip.png");
 
         model = (DefaultTableModel) this.getModel();
     }

@@ -1,6 +1,7 @@
 package com.opengg.modmanager;
 
 import jbdiff.JBPatch;
+import net.lingala.zip4j.ZipFile;
 
 import javax.swing.*;
 import java.awt.*;
@@ -65,7 +66,7 @@ public class TTModManager extends JFrame {
         if(modFile.isDirectory()){
             mod = new Mod(modFile.getPath(), Mod.ModType.FOLDER, true);
         }else{
-            mod = new Mod(modFile.getPath(), Mod.ModType.FOLDER, true);
+            mod = new Mod(modFile.getPath(), Mod.ModType.ZIP, true);
         }
 
         modList.add(mod);
@@ -99,7 +100,7 @@ public class TTModManager extends JFrame {
         }
 
         bottomBar.setProgress(0);
-        bottomBar.setProgressMax(modList.size() + 2);
+        bottomBar.setProgressMax((int) modList.stream().filter(Mod::isLoaded).count() + 2);
 
         try {
             bottomBar.setProgressString("Deleting old instance...");
@@ -119,8 +120,22 @@ public class TTModManager extends JFrame {
 
         for(var mod : backupMods.stream().filter(Mod::isLoaded).collect(Collectors.toList())){
             try {
+                if(mod.getType() == Mod.ModType.ZIP){
+                    new File(Util.getFromMainDirectory("mods\\")).mkdirs();
+                    var modFile = new File(Util.getFromMainDirectory("mods\\" + new File(mod.getPath()).getName()));
+                    if(!modFile.exists()){
+                        bottomBar.setProgressString("Unzipping mod " + mod.getPath());
+                        new ZipFile(mod.getPath()).extractAll(Util.getFromMainDirectory("mods\\"));
+                    }
+                }
+
+                var modPath = mod.getType() == Mod.ModType.ZIP ?
+                        Util.getFromMainDirectory("mods\\" + new File(mod.getPath()).getName().replace(".zip", "")) :
+                        mod.getPath();
+
                 bottomBar.setProgressString("Copying mod " + mod.getPath());
-                FileCopier.copyFileOrFolder(new File(mod.getPath()), new File(dstDir), StandardCopyOption.REPLACE_EXISTING);
+                JOptionPane.showMessageDialog(null, modPath);
+                FileCopier.copyFileOrFolder(new File(modPath), new File(dstDir), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
                 bottomBar.setProgress(++progress);
 
                 bottomBar.setProgressString("Applying patches for " + mod.getPath());
@@ -138,19 +153,19 @@ public class TTModManager extends JFrame {
                 }
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Failed to apply mod " + mod.getPath() + ": " + e.getMessage());
+                e.printStackTrace();
                 return;
             }
         }
 
         bottomBar.setProgressString("Created new game instance");
-
     }
 
     public void runMod(){
         try {
-            Runtime.getRuntime().exec("F:\\LEGO Files\\MODDINGOUT\\LEGOStarWarsSaga.exe", null, new File("F:\\LEGO Files\\MODDINGOUT"));
+            Runtime.getRuntime().exec(Util.getFromMainDirectory("Game Instance\\LEGOStarWarsSaga.exe"), null, new File(Util.getFromMainDirectory("Game Instance\\")));
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to launch game executable");
+            JOptionPane.showMessageDialog(this, "Failed to launch game executable: " + e.getMessage());
         }
     }
 }

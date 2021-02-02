@@ -8,7 +8,7 @@ public class MenuBar extends JPanel {
 
         var addModButton = new JButton("Add mod");
         addModButton.addActionListener(a -> {
-            var file = Util.openFileDialog("", "", Util.LoadType.BOTH, false);
+            var file = Util.openFileDialog("", "zip", Util.LoadType.BOTH, false);
             file.ifPresent(f -> TTModManager.CURRENT.addNewMod(f));
         });
         addModButton.setToolTipText("Add a mod to the mod list.");

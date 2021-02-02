@@ -1,5 +1,6 @@
 package com.opengg.modmanager;
 
+import javax.swing.filechooser.FileSystemView;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -10,8 +11,10 @@ import java.util.List;
 
 public class ModListFileManager {
     public static List<Mod> readModList(){
-        var file = new File("mods.txt");
+        var file = new File(Util.getFromMainDirectory("mods.txt"));
         try {
+            if(!file.exists()) file.createNewFile();
+
             var lines = Files.readAllLines(file.toPath());
             var list = new ArrayList<Mod>();
             for(var line : lines){
@@ -30,7 +33,7 @@ public class ModListFileManager {
     }
 
     public static void writeModList(List<Mod> mods){
-        var file = new File("mods.txt");
+        var file = new File(Util.getFromMainDirectory("mods.txt"));
 
         try(var os = new FileWriter(file)) {
 
