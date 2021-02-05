@@ -1,170 +1,227 @@
 package com.opengg.modmanager;
 
+import com.opengg.modmanager.ui.*;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.image.Image;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import jbdiff.JBPatch;
-import net.lingala.zip4j.ZipFile;
+import org.apache.commons.io.FileUtils;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class TTModManager extends JFrame {
+public class TTModManager extends Application {
     public static TTModManager CURRENT;
+    public BorderPane mainPane;
+    public Stage stage;
 
     public ModTable modTable;
-    public BottomBar bottomBar;
+    public BottomPane bottomPane;
+    public RightPane rightPane;
 
-    private List<Mod> modList;
+    private List<Mod> modList = new ArrayList<>();
 
     public static void main(String... args){
-        var manager = new TTModManager();
+        launch(args);
     }
 
-    public TTModManager(){
+    @Override
+    public void start(Stage stage) {
         CURRENT = this;
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        }
+        this.stage = stage;
 
         ManagerProperties.load();
 
-        this.setLayout(new BorderLayout());
-        this.setJMenuBar(new TopBar());
+        var root = new VBox(new TopBar());
 
-        this.add(new MenuBar(), BorderLayout.NORTH);
-        this.add(new JScrollPane(modTable = new ModTable()), BorderLayout.CENTER);
-        this.add(bottomBar = new BottomBar(), BorderLayout.SOUTH);
+        mainPane = new BorderPane();
+        mainPane.setPadding(new Insets(5,10,5,10));
 
-        this.setMinimumSize(new Dimension(600,400));
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
+        var tablePane = new ScrollPane(modTable = new ModTable());
+        tablePane.setFitToHeight(true);
+        tablePane.setFitToWidth(true);
+        tablePane.setPadding(new Insets(5,5,5,5));
+        tablePane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+
+        mainPane.setCenter(tablePane);
+        mainPane.setBottom(bottomPane = new BottomPane());
+
+        rightPane = new RightPane();
+        mainPane.setRight(rightPane);
+
+        mainPane.setMinSize(900,500);
+        stage.setOnCloseRequest(e -> {
                 ModListFileManager.writeModList(modList);
                 ManagerProperties.save();
                 System.exit(0);
-            }
-        });
-        this.setTitle("TT Mod Manager");
-        this.setVisible(true);
+            });
 
-        refreshModList();
+        ModListFileManager.readModList();
+
+
+        root.getChildren().add(mainPane);
+        Scene scene = new Scene(root, 900, 500);
+
+        stage.setScene(scene);
+        stage.setTitle("TT Mod Manager");
+        stage.sizeToScene();
+        stage.getIcons().add(new Image("file:lego.png"));
+        stage.show();
+
+        stage.setMinWidth(stage.getWidth());
+        stage.setMinHeight(stage.getHeight() + 30);
     }
 
     public void addNewMod(File modFile){
-        if(modList.stream().anyMatch(m -> m.getPath().equalsIgnoreCase(modFile.getAbsolutePath()))) return;
-
-        Mod mod;
-        if(modFile.isDirectory()){
-            mod = new Mod(modFile.getPath(), Mod.ModType.FOLDER, true);
-        }else{
-            mod = new Mod(modFile.getPath(), Mod.ModType.ZIP, true);
+        try{
+            var mods = ModUtil.loadMod(modFile, true);
+            for(var mod : mods){
+                registerMod(mod);
+            }
+        }catch (Exception e){
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Failed to load mods in modfile " + modFile + ": " + e.getMessage());
+            alert.showAndWait();
         }
+    }
+
+    public void registerMod(Mod mod){
+        if(modList.stream().anyMatch(m -> m.name().equals(mod.name()))) return;
 
         modList.add(mod);
-        writeModList();
-        refreshModList();
+        modTable.setModList(modList);
+        rightPane.refreshSourceList(modList);
     }
 
     public void writeModList(){
         ModListFileManager.writeModList(modList);
     }
 
-    public void refreshModList(){
-        modList = ModListFileManager.readModList();
-        modTable.setModList(modList);
-    }
-
     public List<Mod> getLoadedMods(){
         return modList;
     }
 
-    public void applyMods(){
+    public void applyMods(boolean useSymLink){
         ModListFileManager.writeModList(modList);
 
         var sourceDir = ManagerProperties.PROPERTIES.getProperty("originalInstall");
         var dstDir = ManagerProperties.PROPERTIES.getProperty("outputInstall");
         var backupMods = List.copyOf(modList);
+        var editedFiles = new HashSet<String>();
+
 
         if(!new File(sourceDir).exists()){
-            JOptionPane.showMessageDialog(this, "The game directory does not exist, cannot apply patches.");
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("The game directory does not exist, cannot apply patches.");
+            alert.showAndWait();
             return;
         }
 
-        bottomBar.setProgress(0);
-        bottomBar.setProgressMax((int) modList.stream().filter(Mod::isLoaded).count() + 2);
+        double maxSize = modList.stream().filter(Mod::isLoaded).count() + 2;
+        bottomPane.setProgress(0);
 
         try {
-            bottomBar.setProgressString("Deleting old instance...");
-            FileCopier.deleteDir(new File(dstDir));
+            bottomPane.setProgressString("Deleting old instance...");
+            Platform.runLater(() -> System.out.println("Deleting old game instance"));
+            Util.deleteDir(new File(dstDir));
+            Platform.runLater(() -> System.out.println("Old instance removed"));
 
-            bottomBar.setProgress(1);
-            bottomBar.setProgressString("Creating new game instance...");
-            FileCopier.copyFileOrFolder(new File(sourceDir), new File(dstDir), StandardCopyOption.REPLACE_EXISTING);
+            bottomPane.setProgress(1  / maxSize);
+            bottomPane.setProgressString("Creating new game instance...");
+            var allFiles = Files.find(Paths.get(sourceDir),
+                    Integer.MAX_VALUE,
+                    (filePath, fileAttr) -> fileAttr.isRegularFile())
+                    .map(f -> f.toString().replace(sourceDir, ""))
+                    .collect(Collectors.toList());
+
+            if(useSymLink){
+                Platform.runLater(() -> System.out.println("Creating symlink tree"));
+
+                for(var file : allFiles){
+                    new File(dstDir + file).getParentFile().mkdirs();
+                    Files.createSymbolicLink(Path.of(dstDir + file), Path.of(sourceDir + file));
+                }
+            }else{
+                FileUtils.copyDirectory(new File(sourceDir), new File(dstDir));
+            }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to copy original game to modded game directory: " + e.getMessage());
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Failed to copy original game to modded game directory: " + e.getMessage());
+            alert.showAndWait();
+            e.printStackTrace();
             return;
         }
 
-        bottomBar.setProgress(2);
+        Platform.runLater(() -> System.out.println("Symlink tree created"));
+
+        bottomPane.setProgress(2 / maxSize);
 
         var progress = 2;
 
         for(var mod : backupMods.stream().filter(Mod::isLoaded).collect(Collectors.toList())){
             try {
-                if(mod.getType() == Mod.ModType.ZIP){
-                    new File(Util.getFromMainDirectory("mods\\")).mkdirs();
-                    var modFile = new File(Util.getFromMainDirectory("mods\\" + new File(mod.getPath()).getName()));
-                    if(!modFile.exists()){
-                        bottomBar.setProgressString("Unzipping mod " + mod.getPath());
-                        new ZipFile(mod.getPath()).extractAll(Util.getFromMainDirectory("mods\\"));
-                    }
-                }
+                Platform.runLater(() -> System.out.println("Copying mod in place: " + mod.id()));
 
-                var modPath = mod.getType() == Mod.ModType.ZIP ?
-                        Util.getFromMainDirectory("mods\\" + new File(mod.getPath()).getName().replace(".zip", "")) :
-                        mod.getPath();
+                bottomPane.setProgressString("Copying mod " + mod.rootPath());
 
-                bottomBar.setProgressString("Copying mod " + mod.getPath());
-                FileCopier.copyFileOrFolder(new File(modPath), new File(dstDir), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
-                bottomBar.setProgress(++progress);
+                FileUtils.copyDirectory(new File(mod.rootPath()), new File(dstDir));
 
-                bottomBar.setProgressString("Applying patches for " + mod.getPath());
+                Files.find(Paths.get(dstDir),
+                        Integer.MAX_VALUE,
+                        (filePath, fileAttr) -> fileAttr.isRegularFile() && !filePath.toString().toLowerCase().endsWith("patch"))
+                        .forEach(p -> editedFiles.add(p.toString()));
+
                 var allPatches = Files.find(Paths.get(dstDir),
                         Integer.MAX_VALUE,
                         (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.toString().toLowerCase().endsWith("patch"))
                         .collect(Collectors.toList());
 
+                bottomPane.setProgressString("Applying patches for " + mod.name());
+                Platform.runLater(() -> System.out.println("Applying patches for: " + mod.id()));
+
                 for(var patch : allPatches){
-                    var equivalentFile = new File(patch.toString().toLowerCase().replace(".patch", ""));
+                    var equivalentFile = new File(patch.toString().replace(".patch", ""));
+                    var localEquivalent = equivalentFile.toString().replace(dstDir, "");
+
+                    if(editedFiles.contains(equivalentFile.toString()))
+                        throw new UnsupportedOperationException("Mod " + mod.rootPath() + " attempted to modify" + equivalentFile + " which has already been edited!");
+
+                    if(Files.readAttributes(equivalentFile.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isSymbolicLink()){
+                        bottomPane.setProgressString("Copying file " + localEquivalent);
+                        Files.copy(Path.of(sourceDir + localEquivalent), Path.of(dstDir + localEquivalent), StandardCopyOption.REPLACE_EXISTING);
+                    }
+
                     if(equivalentFile.exists()){
+                        editedFiles.add(equivalentFile.toString());
                         JBPatch.bspatch(equivalentFile, equivalentFile, patch.toFile());
                         Files.delete(patch);
                     }
                 }
+
+                bottomPane.setProgress(++progress / maxSize);
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, "Failed to apply mod " + mod.getPath() + ": " + e.getMessage());
+                var alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("Failed to apply mod " + mod.rootPath() + ": " + e.getMessage());
+                alert.showAndWait();
                 e.printStackTrace();
                 return;
             }
         }
 
-        bottomBar.setProgressString("Created new game instance");
-    }
-
-    public void runMod(){
-        try {
-            Runtime.getRuntime().exec(new String[]{(Util.getFromMainDirectory("Game Instance\\LEGOStarWarsSaga.exe"))}, null, new File(Util.getFromMainDirectory("Game Instance\\")));
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to launch game executable: " + e.getMessage());
-        }
+        bottomPane.setProgressString("Created new game instance");
+        Platform.runLater(() -> System.out.println("Finished creating game instance"));
     }
 }

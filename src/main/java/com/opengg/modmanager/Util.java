@@ -38,5 +38,15 @@ public class Util {
         return FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "\\TT Mod Manager\\" + path;
     }
 
+    public static void deleteDir(File file) {
+        File[] contents = file.listFiles();
+        if (contents != null) {
+            for (File f : contents) {
+                deleteDir(f);
+            }
+        }
+        file.delete();
+    }
+
     public enum LoadType{FILE, DIRECTORY, BOTH}
 }

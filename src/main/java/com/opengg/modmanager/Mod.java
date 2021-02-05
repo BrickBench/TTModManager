@@ -1,41 +1,53 @@
 package com.opengg.modmanager;
 
-public class Mod {
-    private String path;
-    private ModType type;
-    private boolean loaded;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
-    public Mod(String path, ModType type, boolean loaded) {
-        this.path = path;
-        this.loaded = loaded;
-        this.type = type;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
+public record Mod(String name, String author, String id, String version, String description, String sourceFile, String rootPath, BooleanProperty loaded, Type type) {
 
     public boolean isLoaded() {
-        return loaded;
+        return loaded.getValue();
     }
 
     public void setLoaded(boolean loaded) {
-        this.loaded = loaded;
+        this.loaded.setValue(loaded);
     }
 
-    public ModType getType() {
+    public String getName() {
+        return name;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getSourceFile() {
+        return sourceFile;
+    }
+
+    public String getRootPath() {
+        return rootPath;
+    }
+
+    public Type getType() {
         return type;
     }
 
-    public void setType(ModType type) {
-        this.type = type;
-    }
-
-    public enum ModType{
-        ZIP, FOLDER
+    public enum Type{
+        TT_MM, RELOADEDII, RAW
     }
 }
+
+

@@ -1,7 +1,8 @@
 package com.opengg.modmanager;
 
+import javafx.scene.control.Alert;
+
 import javax.swing.*;
-import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -31,11 +32,14 @@ public class ManagerProperties {
                 var in = new FileInputStream(file);
 
                 PROPERTIES.load(in);
+                PROPERTIES.replaceAll((f1, f2) -> f2.toString().replace("\\\\", "\\"));
 
                 in.close();
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(TTModManager.CURRENT, "Failed to read settings file: " + e.getMessage());
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Failed to read settings file: " + e.getMessage());
+            alert.showAndWait();
         }
     }
 
@@ -43,7 +47,9 @@ public class ManagerProperties {
         try(var out = new FileOutputStream(Util.getFromMainDirectory("settings.cfg"))){
             PROPERTIES.store(out, "Settings");
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(TTModManager.CURRENT, "Failed to save settings file");
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Failed to save settings file");
+            alert.showAndWait();
         }
     }
 }
