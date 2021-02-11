@@ -14,6 +14,5 @@ A user guide for TT Mod Manager is available at https://youtu.be/g-tYSuFcjfk
 A guide for making mods is available at https://youtu.be/f3ooQGTPA3U
 Modders can go to https://github.com/BrickBench/TTScriptingLibrary to view source and documentation for the Python scripting system.
 
-To create level mods for TTGames games, please view the BrickBench repository at https://github.com/BrickBench/BrickBench and the packaging tutorial at https://youtu.be/DCGJsVQpvrU.
-
+To create level mods for TTGames games, please view the BrickBench repository at https://github.com/BrickBench/BrickBench.
 The download link can be found in the Releases tab to the right.
