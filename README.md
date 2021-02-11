@@ -1,4 +1,4 @@
-# TTModManager
+# TT Mod Manager
 
 TT Mod Manager is a mod loader and manager for Traveler's Tales games, currently focusing on Lego Star Wars: The Complete Saga. It supports both modified game files and
 BrickBench patch files.
