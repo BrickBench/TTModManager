@@ -1,6 +1,9 @@
 package com.opengg.modmanager;
 
-import com.opengg.modmanager.ui.*;
+import com.opengg.modmanager.patching.TextPatcher;
+import com.opengg.modmanager.ui.BottomPane;
+import com.opengg.modmanager.ui.ModTable;
+import com.opengg.modmanager.ui.RightPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,7 +12,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import jbdiff.JBPatch;
 import org.apache.commons.io.FileUtils;
@@ -18,8 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,8 +32,6 @@ public class TTModManager extends Application {
     public BottomPane bottomPane;
     public RightPane rightPane;
 
-    private List<Mod> modList = new ArrayList<>();
-
     public static void main(String... args){
         launch(args);
     }
@@ -44,8 +42,6 @@ public class TTModManager extends Application {
         this.stage = stage;
 
         ManagerProperties.load();
-
-        var root = new VBox(new TopBar());
 
         mainPane = new BorderPane();
         mainPane.setPadding(new Insets(5,10,5,10));
@@ -64,16 +60,12 @@ public class TTModManager extends Application {
 
         mainPane.setMinSize(900,500);
         stage.setOnCloseRequest(e -> {
-                ModListFileManager.writeModList(modList);
+                ModListFileManager.writeModList(ModManager.getLoadedMods());
                 ManagerProperties.save();
                 System.exit(0);
             });
 
-        ModListFileManager.readModList();
-
-
-        root.getChildren().add(mainPane);
-        Scene scene = new Scene(root, 900, 500);
+        Scene scene = new Scene(mainPane, 1000, 500);
 
         stage.setScene(scene);
         stage.setTitle("TT Mod Manager");
@@ -83,45 +75,29 @@ public class TTModManager extends Application {
 
         stage.setMinWidth(stage.getWidth());
         stage.setMinHeight(stage.getHeight() + 30);
-    }
 
-    public void addNewMod(File modFile){
-        try{
-            var mods = ModUtil.loadMod(modFile, true);
-            for(var mod : mods){
-                registerMod(mod);
-            }
-        }catch (Exception e){
-            var alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Failed to load mods in modfile " + modFile + ": " + e.getMessage());
-            alert.showAndWait();
-        }
-    }
+        TTModManager.CURRENT.bottomPane.setProgressString("Loading mod file");
 
-    public void registerMod(Mod mod){
-        if(modList.stream().anyMatch(m -> m.name().equals(mod.name()))) return;
-
-        modList.add(mod);
-        modTable.setModList(modList);
-        rightPane.refreshSourceList(modList);
-    }
-
-    public void writeModList(){
-        ModListFileManager.writeModList(modList);
-    }
-
-    public List<Mod> getLoadedMods(){
-        return modList;
+        ModListFileManager.readModList();
     }
 
     public void applyMods(boolean useSymLink){
-        ModListFileManager.writeModList(modList);
+        TextPatcher.nextCharacter = 1675;
+        ModListFileManager.writeModList(ModManager.getLoadedMods());
+        var conflicts = ModManager.rescanConflicts();
 
+       /* var shouldRepairCharacters =
+                conflicts.stream().filter(c -> c.type() == ModManager.ConflictEntry.Type.CONFLICTING_FILES)
+                                  .anyMatch(c ->    c.conflictItems().contains("chars\\chars.txt") ||
+                                                    c.conflictItems().contains("chars\\collection.txt") ||
+                                                    c.conflictItems().contains("stuff\\text\\english.txt"));*/
+
+       // if(shouldRepairCharacters) BottomPane.log("Attempting character repairs when applying mods");
+        var shouldRepairCharacters = true;
+        BottomPane.log("Attempting character repairs when applying mods");
         var sourceDir = ManagerProperties.PROPERTIES.getProperty("originalInstall");
         var dstDir = ManagerProperties.PROPERTIES.getProperty("outputInstall");
-        var backupMods = List.copyOf(modList);
-        var editedFiles = new HashSet<String>();
-
+        var backupMods = List.copyOf(ModManager.getLoadedMods());
 
         if(!new File(sourceDir).exists()){
             var alert = new Alert(Alert.AlertType.ERROR);
@@ -130,14 +106,14 @@ public class TTModManager extends Application {
             return;
         }
 
-        double maxSize = modList.stream().filter(Mod::isLoaded).count() + 2;
+        double maxSize = ModManager.getLoadedMods().stream().filter(Mod::isEnabled).count() + 2;
         bottomPane.setProgress(0);
 
         try {
             bottomPane.setProgressString("Deleting old instance...");
-            Platform.runLater(() -> System.out.println("Deleting old game instance"));
+            BottomPane.log("Deleting old game instance");
             Util.deleteDir(new File(dstDir));
-            Platform.runLater(() -> System.out.println("Old instance removed"));
+            BottomPane.log("Old instance removed");
 
             bottomPane.setProgress(1  / maxSize);
             bottomPane.setProgressString("Creating new game instance...");
@@ -148,7 +124,7 @@ public class TTModManager extends Application {
                     .collect(Collectors.toList());
 
             if(useSymLink){
-                Platform.runLater(() -> System.out.println("Creating symlink tree"));
+                BottomPane.log("Creating symlink tree");
 
                 for(var file : allFiles){
                     new File(dstDir + file).getParentFile().mkdirs();
@@ -157,71 +133,114 @@ public class TTModManager extends Application {
             }else{
                 FileUtils.copyDirectory(new File(sourceDir), new File(dstDir));
             }
+
+            BottomPane.log("Copying script files");
+            Files.copy(Path.of("python38.dll"), Path.of(dstDir + "\\python38.dll"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(Path.of("TTMMScriptInjector.dll"), Path.of(dstDir + "\\TTMMScriptInjector.dll"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(Path.of("TTMMScriptingLibrary.cp38-win32.pyd"), Path.of(dstDir + "\\TTMMScriptingLibrary.cp38-win32.pyd"), StandardCopyOption.REPLACE_EXISTING);
+            new File(dstDir + "\\MODSCRIPTS").mkdirs();
+            Files.copy(Path.of("TTMMScriptingLibrary.cp38-win32.pyd"), Path.of(dstDir + "\\MODSCRIPTS\\TTMMScriptingLibrary.cp38-win32.pyd"), StandardCopyOption.REPLACE_EXISTING);
+
         } catch (IOException e) {
-            var alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Failed to copy original game to modded game directory: " + e.getMessage());
-            alert.showAndWait();
-            e.printStackTrace();
+            Platform.runLater(() -> {
+                var alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("Failed to copy original game to modded game directory: " + e.getMessage());
+                alert.showAndWait();
+                e.printStackTrace();
+            });
             return;
         }
 
-        Platform.runLater(() -> System.out.println("Symlink tree created"));
+        bottomPane.setProgressString("Deleting pakfiles");
 
+        try {
+            Files.find(Paths.get(dstDir),
+                    Integer.MAX_VALUE,
+                    (filePath, fileAttr) -> filePath.toString().toLowerCase().endsWith("ai.pak"))
+                    .forEach(p -> p.toFile().delete());
+            FileUtils.forceDelete(new File(dstDir + "\\chars\\weirdo\\all"));
+            FileUtils.forceDelete(new File(dstDir + "\\alltxt.pak"));
+
+        } catch (IOException e) {
+            Platform.runLater(() -> {
+                var alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("Failed to delete ai.pak files: " + e.getMessage());
+                alert.showAndWait();
+                e.printStackTrace();
+            });
+            return;
+        }
         bottomPane.setProgress(2 / maxSize);
 
         var progress = 2;
 
-        for(var mod : backupMods.stream().filter(Mod::isLoaded).collect(Collectors.toList())){
+        for(var mod : backupMods.stream().filter(Mod::isEnabled).collect(Collectors.toList())){
             try {
-                Platform.runLater(() -> System.out.println("Copying mod in place: " + mod.id()));
-
-                bottomPane.setProgressString("Copying mod " + mod.rootPath());
-
-                FileUtils.copyDirectory(new File(mod.rootPath()), new File(dstDir));
-
-                Files.find(Paths.get(dstDir),
-                        Integer.MAX_VALUE,
-                        (filePath, fileAttr) -> fileAttr.isRegularFile() && !filePath.toString().toLowerCase().endsWith("patch"))
-                        .forEach(p -> editedFiles.add(p.toString()));
-
-                var allPatches = Files.find(Paths.get(dstDir),
-                        Integer.MAX_VALUE,
-                        (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.toString().toLowerCase().endsWith("patch"))
-                        .collect(Collectors.toList());
-
-                bottomPane.setProgressString("Applying patches for " + mod.name());
-                Platform.runLater(() -> System.out.println("Applying patches for: " + mod.id()));
-
-                for(var patch : allPatches){
-                    var equivalentFile = new File(patch.toString().replace(".patch", ""));
-                    var localEquivalent = equivalentFile.toString().replace(dstDir, "");
-
-                    if(editedFiles.contains(equivalentFile.toString()))
-                        throw new UnsupportedOperationException("Mod " + mod.rootPath() + " attempted to modify" + equivalentFile + " which has already been edited!");
-
-                    if(Files.readAttributes(equivalentFile.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isSymbolicLink()){
-                        bottomPane.setProgressString("Copying file " + localEquivalent);
-                        Files.copy(Path.of(sourceDir + localEquivalent), Path.of(dstDir + localEquivalent), StandardCopyOption.REPLACE_EXISTING);
-                    }
-
-                    if(equivalentFile.exists()){
-                        editedFiles.add(equivalentFile.toString());
-                        JBPatch.bspatch(equivalentFile, equivalentFile, patch.toFile());
-                        Files.delete(patch);
-                    }
-                }
-
+                applyMod(sourceDir, dstDir, mod, shouldRepairCharacters);
                 bottomPane.setProgress(++progress / maxSize);
             } catch (IOException e) {
-                var alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Failed to apply mod " + mod.rootPath() + ": " + e.getMessage());
-                alert.showAndWait();
-                e.printStackTrace();
+                Platform.runLater(() -> {
+                    var alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Failed to apply mod " + mod.rootPath() + ": " + e.getMessage());
+                    alert.showAndWait();
+                    e.printStackTrace();
+                });
                 return;
             }
         }
 
         bottomPane.setProgressString("Created new game instance");
-        Platform.runLater(() -> System.out.println("Finished creating game instance"));
+        BottomPane.log("Finished creating game instance");
+    }
+
+    private void applyMod(String sourceDir, String dstDir, Mod mod, boolean repairCharacters) throws IOException {
+        BottomPane.log("Copying mod in place: " + mod.id());
+
+        bottomPane.setProgressString("Copying mod " + mod.rootPath());
+
+        List<String> automatedMerge = repairCharacters ?
+                List.of("chars\\chars.txt", "chars\\collection.txt", "stuff\\text\\english.txt") :
+                List.of("chars\\chars.txt");
+
+        for(var textFile : automatedMerge){
+            if(mod.editedFiles().contains(textFile)){
+                Files.move(Path.of(mod.rootPath() + textFile), Path.of(mod.rootPath() + textFile + ".temp"));
+            }
+        }
+
+        FileUtils.copyDirectory(new File(mod.rootPath()), new File(dstDir));
+
+        for(var textFile : automatedMerge){
+            if(mod.editedFiles().contains(textFile)){
+                if(Files.isSymbolicLink( Path.of(dstDir + "\\" + textFile))){
+                    Files.copy(Path.of(sourceDir + "\\" + textFile), Path.of(dstDir + "\\" + textFile), StandardCopyOption.REPLACE_EXISTING);
+                }
+                Files.move(Path.of(mod.rootPath() + textFile + ".temp"), Path.of(mod.rootPath() + textFile));
+                TextPatcher.patchTextFile(mod.rootPath() + textFile, dstDir + "\\" + textFile, sourceDir + "\\" + textFile);
+            }
+        }
+
+        var allPatches = Files.find(Paths.get(dstDir),
+                Integer.MAX_VALUE,
+                (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.toString().toLowerCase().endsWith("patch"))
+                .collect(Collectors.toList());
+
+        bottomPane.setProgressString("Applying patches for " + mod.name());
+        BottomPane.log("Applying patches for: " + mod.id());
+
+        for(var patch : allPatches){
+            var equivalentFile = new File(patch.toString().replace(".patch", ""));
+            var localEquivalent = equivalentFile.toString().replace(dstDir, "");
+
+            if(Files.readAttributes(equivalentFile.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isSymbolicLink()){
+                bottomPane.setProgressString("Copying file " + localEquivalent);
+                Files.copy(Path.of(sourceDir + localEquivalent), Path.of(dstDir + localEquivalent), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            if(equivalentFile.exists()){
+                JBPatch.bspatch(equivalentFile, equivalentFile, patch.toFile());
+                Files.delete(patch);
+            }
+        }
     }
 }

@@ -2,17 +2,16 @@ package com.opengg.modmanager.ui;
 
 import com.opengg.modmanager.ManagerProperties;
 import com.opengg.modmanager.Mod;
+import com.opengg.modmanager.ModManager;
 import com.opengg.modmanager.TTModManager;
-import javafx.geometry.VPos;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
-import javax.swing.*;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,29 +26,40 @@ public class RightPane extends BorderPane {
 
         var center = new VBox();
         sourcesList = new ListView<>();
+        sourcesList.prefHeightProperty().bind(center.heightProperty());
 
-        center.getChildren().add(new Label("Sources"));
-        center.getChildren().add(new ScrollPane(sourcesList));
+        var sourceScroll = new ScrollPane(sourcesList);
+        sourceScroll.setFitToWidth(true);
+        sourceScroll.setFitToHeight(true);
+        sourceScroll.prefHeightProperty().bind(center.heightProperty());
+
+                center.getChildren().add(new Label("Sources"));
+        center.getChildren().add(sourceScroll);
 
         this.setCenter(center);
 
         var addModButton = new Button("Add folder");
         addModButton.setOnAction(a -> {
             var chooser = new DirectoryChooser();
-            chooser.setInitialDirectory(new File(ManagerProperties.PROPERTIES.getProperty("originalInstall")));
             var file = chooser.showDialog(TTModManager.CURRENT.stage);
 
-            if(file != null) TTModManager.CURRENT.addNewMod(file);
+            if(file != null) {
+                ModManager.addNewMod(file);
+                ModManager.sortMods();
+            }
         });
         addModButton.setTooltip(new Tooltip("Add a mod source to the mod list."));
 
         var addModArchiveButton = new Button("Add archive");
         addModArchiveButton.setOnAction(a -> {
             var chooser = new FileChooser();
-            chooser.setInitialDirectory(new File(ManagerProperties.PROPERTIES.getProperty("originalInstall")));
             var file = chooser.showOpenDialog(TTModManager.CURRENT.stage);
 
-            if(file != null) TTModManager.CURRENT.addNewMod(file);
+            if(file != null) {
+                ModManager.addNewMod(file);
+                ModManager.sortMods();
+
+            }
         });
         addModArchiveButton.setTooltip(new Tooltip("Add a mod source to the mod list."));
 
@@ -57,11 +67,11 @@ public class RightPane extends BorderPane {
         removeMod.setOnAction(a -> {
             var source = sourcesList.getSelectionModel().getSelectedItem();
             if(source != null){
-                System.out.println("Removing mod source " + source);
-                TTModManager.CURRENT.getLoadedMods().removeIf(m -> m.sourceFile().equals(source));
-                TTModManager.CURRENT.modTable.setModList(TTModManager.CURRENT.getLoadedMods());
-                TTModManager.CURRENT.writeModList();
-                this.refreshSourceList(TTModManager.CURRENT.getLoadedMods());
+                BottomPane.log("Removing mod source " + source);
+                ModManager.getLoadedMods().removeIf(m -> m.sourceFile().equals(source));
+                ModManager.refreshModList();
+                ModManager.writeModList();
+                this.refreshSourceList(ModManager.getLoadedMods());
             }
         });
         removeMod.setTooltip(new Tooltip("Removes the selected mod source from the mod list."));

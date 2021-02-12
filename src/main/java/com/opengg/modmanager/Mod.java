@@ -1,16 +1,19 @@
 package com.opengg.modmanager;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.IntegerProperty;
 
-public record Mod(String name, String author, String id, String version, String description, String sourceFile, String rootPath, BooleanProperty loaded, Type type) {
+import java.util.List;
 
-    public boolean isLoaded() {
-        return loaded.getValue();
+public record Mod(String name, String author, String id, String version, String description, String sourceFile,
+                  String rootPath, BooleanProperty enabled, Type type, IntegerProperty modOrder, List<String> editedFiles, List<String> dependencies) {
+
+    public boolean isEnabled() {
+        return enabled.getValue();
     }
 
-    public void setLoaded(boolean loaded) {
-        this.loaded.setValue(loaded);
+    public void setEnabled(boolean loaded) {
+        this.enabled.setValue(loaded);
     }
 
     public String getName() {
@@ -39,6 +42,10 @@ public record Mod(String name, String author, String id, String version, String 
 
     public String getRootPath() {
         return rootPath;
+    }
+
+    public int getModOrder() {
+        return modOrder.getValue();
     }
 
     public Type getType() {

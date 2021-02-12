@@ -1,5 +1,6 @@
 package com.opengg.modmanager;
 
+import com.opengg.modmanager.ui.BottomPane;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,8 +17,7 @@ public class ModListFileManager {
         try {
             if(!file.exists()) file.createNewFile();
 
-            System.out.println("Reading mod file");
-
+            BottomPane.log("Reading mod file");
             String jsonTxt = IOUtils.toString(new FileInputStream(file), Charset.defaultCharset());
 
             if(jsonTxt.isEmpty()) return;
@@ -32,40 +32,38 @@ public class ModListFileManager {
                 var source = jobj.getString("source");
                 var enabled = jobj.getBoolean("enabled");
 
-
-                System.out.println("Searching for mod " + name);
+                BottomPane.log("Searching for mod " + name);
 
                 List<Mod> sourceList;
                 if(loadedSources.containsKey(source)){
                     sourceList = loadedSources.get(source);
-                    System.out.println("Found in existing source " + source);
+                    BottomPane.log("Found in existing source " + source);
                 }else{
                     try {
-                        sourceList = ModUtil.loadMod(new File(source), false);
+                        sourceList = ModUtil.loadSource(new File(source), false);
                         loadedSources.put(source, sourceList);
                     }catch (IOException e){
-
                         continue;
                     }
                 }
 
-                Mod realMod = null;
                 for(var mod : sourceList){
                     if(mod.id().equals(name)){
-                        mod.setLoaded(enabled);
-                        realMod = mod;
+                        mod.setEnabled(enabled);
                         break;
                     }
                 }
-
-                if(realMod == null) JOptionPane.showMessageDialog(null, "Could not find mod " + name + " in source file " + source);
             }
 
-            System.out.println("Finished loading mod file");
+            BottomPane.log("Finished loading mod file");
+            TTModManager.CURRENT.bottomPane.setProgressString("Finished loading mod file");
 
-            loadedSources.forEach((s, l) -> l.forEach(TTModManager.CURRENT::registerMod));
+            loadedSources.forEach((s, l) -> l.forEach(ModManager::registerMod));
+            ModManager.sortMods();
+
         } catch (IOException e) {
-            System.out.println("Failed to load mods.json file: " + e.getMessage());
+            BottomPane.log("Failed to load mods.json file: " + e.getMessage());
+            TTModManager.CURRENT.bottomPane.setProgressString("Failed to read mod file");
         }
     }
 
@@ -79,7 +77,7 @@ public class ModListFileManager {
             var obj = new JSONObject();
             obj.put("id", mod.id());
             obj.put("source", mod.sourceFile());
-            obj.put("enabled", mod.isLoaded());
+            obj.put("enabled", mod.isEnabled());
 
             array.put(obj);
         }

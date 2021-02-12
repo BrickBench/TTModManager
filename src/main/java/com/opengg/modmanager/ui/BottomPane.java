@@ -1,6 +1,7 @@
 package com.opengg.modmanager.ui;
 
 import com.opengg.modmanager.Mod;
+import com.opengg.modmanager.TTModManager;
 import javafx.application.Platform;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
@@ -52,6 +53,7 @@ public class BottomPane extends VBox {
     class ConsoleOutput extends OutputStream {
         private TextArea textArea;
         private PrintStream out;
+        private String lastLine;
 
         public ConsoleOutput(TextArea textArea, PrintStream out) {
             this.textArea = textArea;
@@ -60,9 +62,14 @@ public class BottomPane extends VBox {
 
         @Override
         public void write(int b) {
-            textArea.appendText(String.valueOf((char)b));
-            textArea.positionCaret(textArea.getLength()-1);
+            lastLine += (char)b;
             out.write(b);
+
+            if(b == '\n'){
+                textArea.appendText(lastLine);
+                textArea.positionCaret(textArea.getLength()-1);
+                lastLine = "";
+            }
         }
     }
 
@@ -74,7 +81,14 @@ public class BottomPane extends VBox {
         Platform.runLater(() -> {
             this.bottomBar.setProgressString(progress);
         });
-        //System.out.println(progress);
+    }
+
+    public static void log(String log){
+        if(Platform.isFxApplicationThread()){
+            System.out.println(log);
+        }else{
+            Platform.runLater(() -> System.out.println(log));
+        }
     }
 }
 

@@ -1,17 +1,17 @@
 package com.opengg.modmanager.ui;
 
 import com.opengg.modmanager.Mod;
+import com.opengg.modmanager.ModManager;
 import com.opengg.modmanager.TTModManager;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-import javafx.util.Callback;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class ModTable extends VBox {
@@ -23,7 +23,7 @@ public class ModTable extends VBox {
 
         var enabled = new TableColumn<Mod, Boolean>();
         enabled.setCellFactory(CheckBoxTableCell.forTableColumn(enabled));
-        enabled.setCellValueFactory(param -> param.getValue().loaded());
+        enabled.setCellValueFactory(param -> param.getValue().enabled());
         enabled.setEditable(true);
         enabled.setMinWidth(40);
         enabled.setMaxWidth(40);
@@ -43,7 +43,14 @@ public class ModTable extends VBox {
         var source = new TableColumn<Mod, String>("Source File");
         source.setCellValueFactory(new PropertyValueFactory<>("sourceFile"));
 
-        table.getColumns().addAll(List.of(enabled, name, author, version, source));
+        var order = new TableColumn<Mod, Integer>("Load Order");
+        order.setCellValueFactory(new PropertyValueFactory<>("modOrder"));
+        order.setMinWidth(40);
+        order.setMaxWidth(100);
+        order.setResizable(false);
+        order.setReorderable(false);
+
+        table.getColumns().addAll(List.of(enabled, name, author, version, source, order));
 
         table.setPlaceholder(new Label("No mods loaded, press the \"Add folder/archive\" button to the right to get started!"));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -65,7 +72,45 @@ public class ModTable extends VBox {
         table.getItems().addAll(mods);
     }
 
-    public Mod getSelectedMod() {
-        return table.getSelectionModel().getSelectedItem();
+    public void setConflicts(List<ModManager.ConflictEntry> conflicts){
+        var worstConflict = new HashMap<String, ModManager.ConflictEntry>();
+
+        for(var conflict : conflicts){
+            switch (conflict.type()){
+                case CONFLICTING_FILES -> {
+                    if(worstConflict.get(conflict.conflicting().id()) == null ||
+                            (worstConflict.get(conflict.conflicting().id()).type() != ModManager.ConflictEntry.Type.DEPENDENT_DISABLED &&
+                              worstConflict.get(conflict.conflicting().id()).type() != ModManager.ConflictEntry.Type.MISSING_DEPENDENCY)){
+                        worstConflict.put(conflict.conflicting().id(), conflict);
+                    }
+                }
+                case DEPENDENT_DISABLED -> {
+                    if(worstConflict.get(conflict.conflicting().id()) == null ||
+                            worstConflict.get(conflict.conflicting().id()).type() != ModManager.ConflictEntry.Type.MISSING_DEPENDENCY){
+                            worstConflict.put(conflict.conflicting().id(), conflict);
+                    }
+                }
+                case MISSING_DEPENDENCY -> worstConflict.put(conflict.conflicting().id(), conflict);
+            }
+        }
+
+        table.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            public void updateItem(Mod item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item == null) {
+                    setStyle("");
+                } else if (worstConflict.containsKey(item.id())) {
+                    switch (worstConflict.get(item.id()).type()) {
+                        case CONFLICTING_FILES -> setStyle("-fx-background-color: yellow;");
+                        case DEPENDENT_DISABLED -> setStyle("-fx-background-color: orange;");
+                        case MISSING_DEPENDENCY -> setStyle("-fx-background-color: red;");
+                    }
+                } else {
+                    setStyle("");
+                }
+            }
+        });
+        table.refresh();
     }
 }

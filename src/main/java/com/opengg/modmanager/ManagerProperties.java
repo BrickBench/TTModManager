@@ -1,5 +1,6 @@
 package com.opengg.modmanager;
 
+import com.opengg.modmanager.ui.BottomPane;
 import javafx.scene.control.Alert;
 
 import javax.swing.*;
@@ -47,9 +48,7 @@ public class ManagerProperties {
         try(var out = new FileOutputStream(Util.getFromMainDirectory("settings.cfg"))){
             PROPERTIES.store(out, "Settings");
         } catch (IOException e) {
-            var alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Failed to save settings file");
-            alert.showAndWait();
+            BottomPane.log("Failed to save settings file");
         }
     }
 }
