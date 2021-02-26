@@ -1,9 +1,8 @@
-package com.opengg.modmanager;
+package modmanager;
 
-import com.opengg.modmanager.ui.BottomPane;
+import modmanager.ui.BottomPane;
 import javafx.scene.control.Alert;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

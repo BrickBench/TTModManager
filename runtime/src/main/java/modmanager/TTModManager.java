@@ -1,9 +1,9 @@
-package com.opengg.modmanager;
+package modmanager;
 
-import com.opengg.modmanager.patching.TextPatcher;
-import com.opengg.modmanager.ui.BottomPane;
-import com.opengg.modmanager.ui.ModTable;
-import com.opengg.modmanager.ui.RightPane;
+import modmanager.patching.TextPatcher;
+import modmanager.ui.BottomPane;
+import modmanager.ui.ModTable;
+import modmanager.ui.RightPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -81,10 +81,10 @@ public class TTModManager extends Application {
         ModListFileManager.readModList();
     }
 
-    public void applyMods(boolean useSymLink){
+    public void applyMods(){
         TextPatcher.nextCharacter = 1675;
         ModListFileManager.writeModList(ModManager.getLoadedMods());
-        var conflicts = ModManager.rescanConflicts();
+      //  var conflicts = ModManager.rescanConflicts();
 
        /* var shouldRepairCharacters =
                 conflicts.stream().filter(c -> c.type() == ModManager.ConflictEntry.Type.CONFLICTING_FILES)
@@ -117,22 +117,8 @@ public class TTModManager extends Application {
 
             bottomPane.setProgress(1  / maxSize);
             bottomPane.setProgressString("Creating new game instance...");
-            var allFiles = Files.find(Paths.get(sourceDir),
-                    Integer.MAX_VALUE,
-                    (filePath, fileAttr) -> fileAttr.isRegularFile())
-                    .map(f -> f.toString().replace(sourceDir, ""))
-                    .collect(Collectors.toList());
 
-            if(useSymLink){
-                BottomPane.log("Creating symlink tree");
-
-                for(var file : allFiles){
-                    new File(dstDir + file).getParentFile().mkdirs();
-                    Files.createSymbolicLink(Path.of(dstDir + file), Path.of(sourceDir + file));
-                }
-            }else{
-                FileUtils.copyDirectory(new File(sourceDir), new File(dstDir));
-            }
+            ModApplier.createLinkTree(sourceDir, dstDir);
 
             BottomPane.log("Copying script files");
             Files.copy(Path.of("python38.dll"), Path.of(dstDir + "\\python38.dll"), StandardCopyOption.REPLACE_EXISTING);

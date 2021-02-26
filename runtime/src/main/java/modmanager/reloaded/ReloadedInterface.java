@@ -1,4 +1,4 @@
-package com.opengg.modmanager.reloaded;
+package modmanager.reloaded;
 
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.WinDef;

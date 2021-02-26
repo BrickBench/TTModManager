@@ -1,9 +1,8 @@
-package com.opengg.modmanager.ui;
+package modmanager.ui;
 
-import com.opengg.modmanager.ManagerProperties;
-import com.opengg.modmanager.Mod;
-import com.opengg.modmanager.ModManager;
-import com.opengg.modmanager.TTModManager;
+import modmanager.Mod;
+import modmanager.ModManager;
+import modmanager.TTModManager;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -11,7 +10,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
-import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 

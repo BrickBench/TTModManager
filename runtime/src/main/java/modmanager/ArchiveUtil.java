@@ -1,6 +1,6 @@
-package com.opengg.modmanager;
+package modmanager;
 
-import com.opengg.modmanager.ui.BottomPane;
+import modmanager.ui.BottomPane;
 import net.sf.sevenzipjbinding.*;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchive;

@@ -1,4 +1,4 @@
-package com.opengg.modmanager.ui;
+package modmanager.ui;
 
 import javafx.geometry.HPos;
 import javafx.scene.control.Label;

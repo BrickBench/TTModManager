@@ -1,4 +1,4 @@
-package com.opengg.modmanager;
+package modmanager;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;

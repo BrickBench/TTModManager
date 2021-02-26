@@ -1,11 +1,10 @@
-package com.opengg.modmanager;
+package modmanager;
 
-import com.opengg.modmanager.ui.BottomPane;
+import modmanager.ui.BottomPane;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.swing.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.LinkedHashMap;

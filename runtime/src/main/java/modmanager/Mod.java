@@ -1,4 +1,4 @@
-package com.opengg.modmanager;
+package modmanager;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;

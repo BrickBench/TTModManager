@@ -1,7 +1,7 @@
-package com.opengg.modmanager;
+package modmanager;
 
 
-import com.opengg.modmanager.ui.BottomPane;
+import modmanager.ui.BottomPane;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.control.Alert;

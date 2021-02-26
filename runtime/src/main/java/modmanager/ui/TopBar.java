@@ -1,7 +1,7 @@
-package com.opengg.modmanager.ui;
+package modmanager.ui;
 
-import com.opengg.modmanager.ManagerProperties;
-import com.opengg.modmanager.TTModManager;
+import modmanager.ManagerProperties;
+import modmanager.TTModManager;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 

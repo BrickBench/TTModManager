@@ -1,7 +1,7 @@
-package com.opengg.modmanager.patching;
+package modmanager.patching;
 
-import com.opengg.modmanager.ManagerProperties;
-import com.opengg.modmanager.ui.BottomPane;
+import modmanager.ManagerProperties;
+import modmanager.ui.BottomPane;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

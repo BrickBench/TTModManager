@@ -1,8 +1,8 @@
-package com.opengg.modmanager.ui;
+package modmanager.ui;
 
-import com.opengg.modmanager.Mod;
-import com.opengg.modmanager.ModManager;
-import com.opengg.modmanager.TTModManager;
+import modmanager.Mod;
+import modmanager.ModManager;
+import modmanager.TTModManager;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
