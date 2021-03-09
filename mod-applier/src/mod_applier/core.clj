@@ -1,61 +1,144 @@
 (ns mod-applier.core
-  (:require [clojure.java.io :as io])
-  (:import org.apache.commons.io.FileUtils
-           (java.nio.file Paths Files StandardCopyOption))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [clojure.set :as set]
+            [clojure.data :as data])
+  (:import (java.nio.file Paths Files))
   (:gen-class
     :name modmanager.ModApplier
     :methods [#^{:static true}
               [createLinkTree [String String] boolean]]))
 
-(def src-dir "F:\\LEGO Files\\LSWTCS\\PC")
-(def mod-dir "F:\\LEGO Files\\LegoMods\\ModTest2")
-(def dst-dir "F:\\Mods\\Game Instance")
+(def src-dir "C:\\Users\\javst\\Documents\\LEGO\\LEGO Star Wars")
+(def mod-dir "C:\\Users\\javst\\Documents\\LEGO\\Mod\\Sonic\\completesaga.modset.sonicdimensions\\Redirector")
+(def dst-dir "C:\\Users\\javst\\Documents\\TT Mod Manager\\Game Instance")
+
+(def copy-files ["english.txt" "chars.txt" "collection.txt"])
+(def ignore-files ["ai.pak" "hat_hair_all_pc.gsc" "head_all_pc.gsc" "alltxt.pak"])
+
+(def char-regex #"(?m)char_start\s*dir\s*\"(.*)\"\s*file\s*\"(.*)\"\s*char_end")
+(def char-name-regex #"name_id[\s=](\d*)\s*\n")
+
+(defn delete-directory-recursive
+  "Recursively delete a directory."
+  [^java.io.File file]
+  (when (.isDirectory file)
+    (doseq [file-in-dir (.listFiles file)]
+      (delete-directory-recursive file-in-dir)))
+  (io/delete-file file))
+
+(defn parse-int [s]
+  (Integer/parseInt (re-find #"\A-?\d+" s)))
 
 (defn get-valid-files
-  "Returns all files in the given directory, recursively, removing the root directory"
+  "Returns all files in the given directory, recursively, removing the root directory
+  and ignoring any files in ignore-files."
   [src]
-  (map #(. (. % toString) replace src "")
-       (filter #(not ( . % isDirectory)) (file-seq (io/file src)))))
+  (doall (filter (fn [path] (not (some #(str/ends-with? (str/lower-case path) %) ignore-files)))
+           (map #( . (. % toString) replace src "")
+                (filter #(not ( . % isDirectory)) (file-seq (io/file src)))))))
 
 (defn create-link-tree
-  "Creates links for the files in the src directory in the dst directory"
+  "Creates links for the files in the src directory in the dst directory.
+  This also does a direct copy for any file in the vector copy-files."
   [src dst]
   (map (fn [path]
          (do (. (. (io/file (str dst path)) getParentFile) mkdirs)
-             (Files/createLink (Paths/get dst (into-array String [path])) (Paths/get src (into-array String [path])))))
+             (if (some #(str/ends-with? (str/lower-case path) %) copy-files)
+                 (io/copy (io/file (str/join "\\" [src path]))
+                          (io/file (str/join "\\" [dst path])))
+                 (Files/createLink (Paths/get dst (into-array String [path]))
+                                   (Paths/get src (into-array String [path]))))))
        (get-valid-files src)))
+
+(defn parse-collections
+  [target mod loaded-data]
+  loaded-data)
+
+(defn parse-english
+  [target mod loaded-data]
+  loaded-data)
+
+(defn correct-char-indices
+  "Corrects character indices to fit in the empty region in the console
+   information section, returning the newly adjusted load data."
+  [char-file loaded-data]
+  (let
+       [char-data (slurp char-file)
+        match-str (re-find char-name-regex char-data)
+        existing-index (first (rest match-str))]
+       (if (contains? (:index-changes loaded-data) existing-index)
+           (do (spit char-file
+                 (str/replace char-data
+                              (first match-str)
+                              (str "name_id="
+                                   ((:index-changes loaded-data) existing-index)
+                                   "\n")))
+             loaded-data)
+
+           (do (spit char-file
+                 (str/replace char-data
+                              (first match-str)
+                              (str "name_id="
+                                   (+ 1 (:character-index loaded-data))
+                                   "\n")))
+             (assoc loaded-data
+               :index-changes (merge (:index-changes loaded-data)
+                                     {(parse-int existing-index) (+ 1 (:character-index loaded-data))})
+               :character-index (+ 1 (:character-index loaded-data)))))))
+
+
+(defn parse-chars [char-file]
+  "Parses a chars.txt file into a set of entries in [dir file] format"
+   (map #(into [] (rest %))
+        (re-seq char-regex (slurp char-file))))
+
+(defn process-chars
+  "Processes a mod chars.txt file, appending its new characters onto
+  the :chars set and correcting the name indices for new characters"
+  [target mod original loaded-data]
+  (let [mod-chars (parse-chars (str mod "\\chars\\chars.txt"))
+        original-chars (parse-chars (str original "\\chars\\chars.txt"))
+        mod-char-files (map #(str target "\\chars\\" (nth % 0) "\\" (nth % 1) ".txt")
+                            (filter some? (first (data/diff mod-chars original-chars))))
+        corrected-data (reduce #(correct-char-indices %2 %1) loaded-data mod-char-files)]
+
+    (assoc corrected-data
+      :chars (set/union (:chars corrected-data) mod-chars))))
+
 
 (defn apply-mod
   "Copies the files in the src directory in the dst directory"
-  [mod target existing-state]
-  (map (fn [path]
-         (do (. (. (io/file (str target path)) getParentFile) mkdirs)
-             (Files/copy (Paths/get mod (into-array String [path])) (Paths/get target (into-array String [path])) StandardCopyOption/REPLACE_EXISTING)
-             path))
-       (get-valid-files mod)))
+  [target original mod loaded-data]
+  (reduce #(cond
+             (str/ends-with? (str/lower-case %2) "chars.txt") (process-chars target mod original %1)
+             (str/ends-with? (str/lower-case %2) "english.txt") (parse-english target mod %1)
+             (str/ends-with? (str/lower-case %2) "collections.txt") (parse-collections target mod %1)
+             true %1)
+          loaded-data
+          (filter (fn [path] (some #(str/ends-with? (str/lower-case path) %) copy-files))
+             (doall (map (fn [path] (do
+                                      (. (. (io/file (str target path)) getParentFile) mkdirs)
+                                      (io/copy (io/file (str/join "\\" [mod path]))
+                                               (io/file (str/join "\\" [target path])))
+                                      path))
+                         (get-valid-files mod))))))
 
 (defn apply-mods
   "Applies the given mods given the existing repair state (ENGLISH.TXT entries)"
-  [mods target existing-state]
-  (if (empty? mods)
-    true
-    (apply-mods (rest mods) target (apply-mod (first mods) target existing-state))))
+  ([target original mods loaded-data]
+   (if (empty? mods)
+     loaded-data
+     (apply-mods target original (rest mods) (apply-mod target original (first mods) loaded-data))))
+  ([target original mods]
+   (apply-mods target original mods {:character-index 2009})))
 
 (defn create-game-instance
-  [source target mods]
+  [source target]
   (do
-     (when (.exists (io/file target)) (. FileUtils deleteDirectory (io/file target)))
-     (do
-        (create-link-tree source target)
-        (apply-mods mods target {}))))
+     (when (.exists (io/file target)) (delete-directory-recursive (io/file target)))
+     (create-link-tree source target)))
 
-
-
-
-
-
-
-
-(defn -createGameInstance [src dst mods]
-  (create-game-instance src dst mods))
+(defn -createGameInstance [src dst]
+  (create-game-instance src dst))
 
