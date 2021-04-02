@@ -10,8 +10,8 @@
     <version>0.0.3</version>
 
     <properties>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
     </properties>
 
     <modules>
@@ -59,8 +59,8 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
-                        <source>15</source>
-                        <target>15</target>
+                        <source>16</source>
+                        <target>16</target>
                         <compilerArgs>
                             --enable-preview
                         </compilerArgs>

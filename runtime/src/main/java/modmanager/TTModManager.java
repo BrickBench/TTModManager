@@ -1,5 +1,6 @@
 package modmanager;
 
+import modmanager.instance.ModApplier;
 import modmanager.patching.TextPatcher;
 import modmanager.ui.BottomPane;
 import modmanager.ui.ModTable;
@@ -118,6 +119,9 @@ public class TTModManager extends Application {
             bottomPane.setProgress(1  / maxSize);
             bottomPane.setProgressString("Creating new game instance...");
 
+            BottomPane.log(sourceDir);
+            BottomPane.log(dstDir);
+
             ModApplier.createLinkTree(sourceDir, dstDir);
 
             BottomPane.log("Copying script files");
@@ -137,25 +141,6 @@ public class TTModManager extends Application {
             return;
         }
 
-        bottomPane.setProgressString("Deleting pakfiles");
-
-        try {
-            Files.find(Paths.get(dstDir),
-                    Integer.MAX_VALUE,
-                    (filePath, fileAttr) -> filePath.toString().toLowerCase().endsWith("ai.pak"))
-                    .forEach(p -> p.toFile().delete());
-            FileUtils.forceDelete(new File(dstDir + "\\chars\\weirdo\\all"));
-            FileUtils.forceDelete(new File(dstDir + "\\alltxt.pak"));
-
-        } catch (IOException e) {
-            Platform.runLater(() -> {
-                var alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Failed to delete ai.pak files: " + e.getMessage());
-                alert.showAndWait();
-                e.printStackTrace();
-            });
-            return;
-        }
         bottomPane.setProgress(2 / maxSize);
 
         var progress = 2;
