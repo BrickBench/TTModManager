@@ -43,7 +43,7 @@ public class RightPane extends BorderPane {
 
             if(file != null) {
                 ModManager.addNewMod(file);
-                ModManager.sortMods();
+                ModManager.sortMods(ModManager.getLoadedMods());
             }
         });
         addModButton.setTooltip(new Tooltip("Add a mod source to the mod list."));
@@ -55,7 +55,7 @@ public class RightPane extends BorderPane {
 
             if(file != null) {
                 ModManager.addNewMod(file);
-                ModManager.sortMods();
+                ModManager.sortMods(ModManager.getLoadedMods());
 
             }
         });

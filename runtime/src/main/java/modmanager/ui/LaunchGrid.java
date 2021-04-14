@@ -80,22 +80,13 @@ public class LaunchGrid extends GridPane {
                     alert.showAndWait();
                     return;
                 }
-                if(this.getConflictPrompt(ModManager.rescanConflicts())) {
+                if(this.getConflictPrompt(ModManager.rescanConflicts(ModManager.getLoadedMods()))) {
                     runButton.setDisable(true);
                     applyNoRun.setDisable(true);
                     new Thread(() -> {
                         try {
                             TTModManager.CURRENT.applyMods();
-                            var file = new File(Util.getFromMainDirectory("\\Game Instance\\launch.bat"));
-                            var writer = new BufferedWriter(new FileWriter(file));
-                            writer.write("cd /D \"%~dp0\"");
-                            writer.newLine();
-                            writer.write("START " + selection.path.replace("Game Instance\\", ""));
-                            writer.close();
-
-                            runSafe(Util.getFromMainDirectory("\\Game Instance\\launch.bat"));
-                            Thread.sleep(300);
-                            this.run(false, "Injector.exe");
+                            runSafe(Util.getFromMainDirectory("\\Game Instance\\LEGOStarWarsSaga.exe"));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }finally {
@@ -121,7 +112,7 @@ public class LaunchGrid extends GridPane {
                     return;
                 }
 
-                if(this.getConflictPrompt(ModManager.rescanConflicts())){
+                if(this.getConflictPrompt(ModManager.rescanConflicts(ModManager.getLoadedMods()))){
                     runButton.setDisable(true);
                     applyNoRun.setDisable(true);
                     new Thread(() -> {

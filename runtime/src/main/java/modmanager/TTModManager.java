@@ -85,16 +85,7 @@ public class TTModManager extends Application {
     public void applyMods(){
         TextPatcher.nextCharacter = 1675;
         ModListFileManager.writeModList(ModManager.getLoadedMods());
-      //  var conflicts = ModManager.rescanConflicts();
 
-       /* var shouldRepairCharacters =
-                conflicts.stream().filter(c -> c.type() == ModManager.ConflictEntry.Type.CONFLICTING_FILES)
-                                  .anyMatch(c ->    c.conflictItems().contains("chars\\chars.txt") ||
-                                                    c.conflictItems().contains("chars\\collection.txt") ||
-                                                    c.conflictItems().contains("stuff\\text\\english.txt"));*/
-
-       // if(shouldRepairCharacters) BottomPane.log("Attempting character repairs when applying mods");
-        var shouldRepairCharacters = true;
         BottomPane.log("Attempting character repairs when applying mods");
         var sourceDir = ManagerProperties.PROPERTIES.getProperty("originalInstall");
         var dstDir = ManagerProperties.PROPERTIES.getProperty("outputInstall");
@@ -125,6 +116,7 @@ public class TTModManager extends Application {
             ModApplier.createLinkTree(sourceDir, dstDir);
 
             BottomPane.log("Copying script files");
+            Files.copy(Path.of("dinput8.dll"), Path.of(dstDir + "\\dinput8.dll"), StandardCopyOption.REPLACE_EXISTING);
             Files.copy(Path.of("python38.dll"), Path.of(dstDir + "\\python38.dll"), StandardCopyOption.REPLACE_EXISTING);
             Files.copy(Path.of("TTMMScriptInjector.dll"), Path.of(dstDir + "\\TTMMScriptInjector.dll"), StandardCopyOption.REPLACE_EXISTING);
             Files.copy(Path.of("TTMMScriptingLibrary.cp38-win32.pyd"), Path.of(dstDir + "\\TTMMScriptingLibrary.cp38-win32.pyd"), StandardCopyOption.REPLACE_EXISTING);
@@ -147,7 +139,7 @@ public class TTModManager extends Application {
 
         for(var mod : backupMods.stream().filter(Mod::isEnabled).collect(Collectors.toList())){
             try {
-                applyMod(sourceDir, dstDir, mod, shouldRepairCharacters);
+                applyMod(sourceDir, dstDir, mod);
                 bottomPane.setProgress(++progress / maxSize);
             } catch (IOException e) {
                 Platform.runLater(() -> {
@@ -164,16 +156,13 @@ public class TTModManager extends Application {
         BottomPane.log("Finished creating game instance");
     }
 
-    private void applyMod(String sourceDir, String dstDir, Mod mod, boolean repairCharacters) throws IOException {
+    private void applyMod(String sourceDir, String dstDir, Mod mod) throws IOException {
         BottomPane.log("Copying mod in place: " + mod.id());
-
         bottomPane.setProgressString("Copying mod " + mod.rootPath());
 
-        List<String> automatedMerge = repairCharacters ?
-                List.of("chars\\chars.txt", "chars\\collection.txt", "stuff\\text\\english.txt") :
-                List.of("chars\\chars.txt");
+        List<String> softwareMergedFiles = List.of("chars\\chars.txt", "chars\\collection.txt", "stuff\\text\\english.txt");
 
-        for(var textFile : automatedMerge){
+        for(var textFile : softwareMergedFiles){
             if(mod.editedFiles().contains(textFile)){
                 Files.move(Path.of(mod.rootPath() + textFile), Path.of(mod.rootPath() + textFile + ".temp"));
             }
@@ -181,13 +170,16 @@ public class TTModManager extends Application {
 
         FileUtils.copyDirectory(new File(mod.rootPath()), new File(dstDir));
 
-        for(var textFile : automatedMerge){
+        var patchState = new TextPatcher.PatcherState();
+
+        for(var textFile : softwareMergedFiles){
             if(mod.editedFiles().contains(textFile)){
                 if(Files.isSymbolicLink( Path.of(dstDir + "\\" + textFile))){
                     Files.copy(Path.of(sourceDir + "\\" + textFile), Path.of(dstDir + "\\" + textFile), StandardCopyOption.REPLACE_EXISTING);
                 }
+
                 Files.move(Path.of(mod.rootPath() + textFile + ".temp"), Path.of(mod.rootPath() + textFile));
-                TextPatcher.patchTextFile(mod.rootPath() + textFile, dstDir + "\\" + textFile, sourceDir + "\\" + textFile);
+                TextPatcher.patchTextFile(mod.rootPath() + textFile, dstDir + "\\" + textFile, sourceDir + "\\" + textFile, patchState);
             }
         }
 

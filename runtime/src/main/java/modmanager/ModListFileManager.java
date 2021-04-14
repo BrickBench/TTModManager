@@ -58,7 +58,7 @@ public class ModListFileManager {
             TTModManager.CURRENT.bottomPane.setProgressString("Finished loading mod file");
 
             loadedSources.forEach((s, l) -> l.forEach(ModManager::registerMod));
-            ModManager.sortMods();
+            ModManager.sortMods(ModManager.getLoadedMods());
 
         } catch (IOException e) {
             BottomPane.log("Failed to load mods.json file: " + e.getMessage());
