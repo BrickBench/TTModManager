@@ -25,6 +25,8 @@ public class ModListFileManager {
 
             var mods = json.getJSONArray("mods");
             var loadedSources = new LinkedHashMap<String, List<Mod>>();
+
+            int idx = 0;
             for(var jmod : mods){
                 var jobj = (JSONObject) jmod;
                 var name = jobj.getString("id");
@@ -49,6 +51,7 @@ public class ModListFileManager {
                 for(var mod : sourceList){
                     if(mod.id().equals(name)){
                         mod.setEnabled(enabled);
+                        ModManager.registerMod(mod);
                         break;
                     }
                 }
@@ -56,9 +59,7 @@ public class ModListFileManager {
 
             BottomPane.log("Finished loading mod file");
             TTModManager.CURRENT.bottomPane.setProgressString("Finished loading mod file");
-
-            loadedSources.forEach((s, l) -> l.forEach(ModManager::registerMod));
-            ModManager.sortMods(ModManager.getLoadedMods());
+            ModSorter.sortMods(ModManager.getLoadedMods());
 
         } catch (IOException e) {
             BottomPane.log("Failed to load mods.json file: " + e.getMessage());

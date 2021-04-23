@@ -34,7 +34,9 @@ public class TTModManager extends Application {
     public RightPane rightPane;
 
     public static void main(String... args){
-        launch(args);
+
+        ModSorter.runSorterTests();
+        //launch(args);
     }
 
     @Override

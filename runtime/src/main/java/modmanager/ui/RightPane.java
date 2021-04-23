@@ -2,6 +2,7 @@ package modmanager.ui;
 
 import modmanager.Mod;
 import modmanager.ModManager;
+import modmanager.ModSorter;
 import modmanager.TTModManager;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
@@ -43,7 +44,7 @@ public class RightPane extends BorderPane {
 
             if(file != null) {
                 ModManager.addNewMod(file);
-                ModManager.sortMods(ModManager.getLoadedMods());
+                ModSorter.sortMods(ModManager.getLoadedMods());
             }
         });
         addModButton.setTooltip(new Tooltip("Add a mod source to the mod list."));
@@ -55,7 +56,7 @@ public class RightPane extends BorderPane {
 
             if(file != null) {
                 ModManager.addNewMod(file);
-                ModManager.sortMods(ModManager.getLoadedMods());
+                ModSorter.sortMods(ModManager.getLoadedMods());
 
             }
         });
