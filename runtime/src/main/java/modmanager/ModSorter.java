@@ -15,9 +15,7 @@ import org.sat4j.specs.TimeoutException;
 
 public class ModSorter {
     public static List<Mod> sortMods(List<Mod> mods) {
-        record ModOrder(Integer first, Integer second) {
-        }
-        ;
+        record ModOrder(int first, int second) {};
 
         //Initializes the solver with n^2 variables
         var solver = new WeightedMaxSatDecorator(SolverFactory.newLight());
@@ -52,8 +50,6 @@ public class ModSorter {
 
         //In the second step, the hard constraints resulting from the dependencies are added.
         for (var mod : mods) {
-            if (mod.dependencies().isEmpty()) continue;
-
             //For every individual dependency, create a hard clause.
             for (var dep : mod.dependencies()) {
                 var depAsMod = mods.stream().filter(m -> m.id().equals(dep)).findFirst().get();
@@ -169,6 +165,9 @@ public class ModSorter {
         return newModList;
     }
 
+
+    //Creates a mod wit the given ID and dependencies.
+    //This exists to not include unnecessary fields for testing sorting.
     public static Mod quickMod(String id, String... dependencies){
         return new Mod("","",id,"","","","",new SimpleBooleanProperty(true), Mod.Type.TT_MM,
                 new SimpleIntegerProperty(0), List.of(), List.of(dependencies));
@@ -290,7 +289,7 @@ public class ModSorter {
                 quickMod("ModA", "ModB"),
                 quickMod("ModF"));
 
-        System.out.println("Does a reordering take place when A depends on B and B o E: " + modListsEqual(ModSorter.sortMods(modChain), modChainGoal));
+        System.out.println("Does a reordering take place when A depends on B and B on E: " + modListsEqual(ModSorter.sortMods(modChain), modChainGoal));
 
         var doubleDep = List.of(
                 quickMod("ModA", "ModE"),
@@ -370,5 +369,28 @@ public class ModSorter {
 
 
         System.out.println("Does a list with a multiple step circular dependency with a gap stay unedited: " + modListsEqual(ModSorter.sortMods(gapMultiCircularDep), gapMultiCircularDep));
+
+        var test = List.of(
+                quickMod("ModA", "ModJ"),
+                quickMod("ModB"),
+                quickMod("ModC", "ModI"),
+                quickMod("ModD", "ModH"),
+                quickMod("ModE", "ModH"),
+                quickMod("ModF"),
+                quickMod("ModG","ModH"),
+                quickMod("ModH"),
+                quickMod("ModI", "ModH"),
+                quickMod("ModJ", "ModI"),
+                quickMod("ModK", "ModB"),
+                quickMod("ModL"),
+                quickMod("ModM", "ModO"),
+                quickMod("ModN", "ModO"),
+                quickMod("ModO"),
+                quickMod("ModP", "ModB")
+
+
+                );
+
+        printMods(sortMods(test));
     }
 }
