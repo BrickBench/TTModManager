@@ -14,8 +14,8 @@
 (def mod-dir "C:\\Users\\javst\\Documents\\TT Mod Manager\\Mods\\SOLOALEGOSTARWARSCHARSPACK")
 (def dst-dir "C:\\Users\\javst\\Documents\\TT Mod Manager\\Game Instance")
 
-(def copy-files ["english.txt" "chars.txt" "collection.txt"])
-(def ignore-files ["ai.pak" "hat_hair_all_pc.gsc" "head_all_pc.gsc" "alltxt.pak"])
+(def copy-files ["ENGLISH.TXT" "CHARS.TXT" "COLLECTION.TXT"])
+(def ignore-files ["AI.PAL" "HAT_HAIR_ALL_PC.GSC" "HEAD_ALL_PC.GSC" "alltxt.pak"])
 
 (def char-regex #"(?m)char_start\s*dir\s*\"(.*)\"\s*file\s*\"(.*)\"\s*char_end")
 (def char-name-regex #"name_id[\s=](\d*)\s*\n")
@@ -46,8 +46,7 @@
   (doall (map (fn [path]
                 (do (. (. (io/file (str dst path)) getParentFile) mkdirs)
                     (if (some #(str/ends-with? (str/lower-case path) %) copy-files)
-                      (io/copy (io/file (str/join "\\" [src path]))
-                               (io/file (str/join "\\" [dst path])))
+                      (io/copy (io/file src path) (io/file dst path))
                       (Files/createSymbolicLink (Paths/get dst (into-array String [path]))
                                                 (Paths/get src (into-array String [path]))
                                                 (make-array FileAttribute 0)))))
@@ -86,8 +85,9 @@
                :character-index (+ 1 (:character-index loaded-data)))))))
 
 
-(defn parse-chars [char-file]
+(defn parse-chars
   "Parses a chars.txt file into a set of entries in [dir file] format"
+  [char-file]
    (map #(into [] (rest %))
         (re-seq char-regex (slurp char-file))))
 
@@ -112,13 +112,12 @@
              (str/ends-with? (str/lower-case %2) "chars.txt") (process-chars dst mod src %1)
              (str/ends-with? (str/lower-case %2) "english.txt") (parse-english dst mod %1)
              (str/ends-with? (str/lower-case %2) "collections.txt") (parse-collections dst mod %1)
-             true %1)
+             :else %1)
           loaded-data
           (filter (fn [path] (some #(str/ends-with? (str/lower-case path) %) copy-files))
              (doall (map (fn [path] (do
                                       (. (. (io/file (str dst path)) getParentFile) mkdirs)
-                                      (io/copy (io/file (str/join "\\" [mod path]))
-                                               (io/file (str/join "\\" [dst path])))
+                                      (io/copy (io/file mod path) (io/file dst path))
                                       path))
                          (get-valid-files mod))))))
 
