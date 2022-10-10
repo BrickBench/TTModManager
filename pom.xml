@@ -12,6 +12,7 @@
     <properties>
         <maven.compiler.source>19</maven.compiler.source>
         <maven.compiler.target>19</maven.compiler.target>
+        <exec.mainClass>modmanager.TTModManager</exec.mainClass>
     </properties>
 
     <modules>
@@ -57,8 +58,8 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
-                        <source>16</source>
-                        <target>16</target>
+                        <source>19</source>
+                        <target>19</target>
                         <compilerArgs>
                             --enable-preview
                         </compilerArgs>

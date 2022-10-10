@@ -11,13 +11,14 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RightPane extends BorderPane {
+public class SourcePane extends BorderPane {
     private final ListView<String> sourcesList;
 
-    public RightPane(){
+    public SourcePane(){
 
         var launchGrid = new LaunchGrid();
 
@@ -43,7 +44,7 @@ public class RightPane extends BorderPane {
             var file = chooser.showDialog(TTModManager.CURRENT.stage);
 
             if(file != null) {
-                ModManager.addNewMod(file);
+                ModManager.addNewMod(file.toPath());
                 ModSorter.sortMods(ModManager.getLoadedMods());
             }
         });
@@ -55,7 +56,7 @@ public class RightPane extends BorderPane {
             var file = chooser.showOpenDialog(TTModManager.CURRENT.stage);
 
             if(file != null) {
-                ModManager.addNewMod(file);
+                ModManager.addNewMod(file.toPath());
                 ModSorter.sortMods(ModManager.getLoadedMods());
 
             }
@@ -67,7 +68,7 @@ public class RightPane extends BorderPane {
             var source = sourcesList.getSelectionModel().getSelectedItem();
             if(source != null){
                 BottomPane.log("Removing mod source " + source);
-                ModManager.getLoadedMods().removeIf(m -> m.sourceFile().equals(source));
+                ModManager.getLoadedMods().removeIf(m -> m.sourceFile().equals(Path.of(source)));
                 ModManager.refreshModList();
                 ModManager.writeModList();
                 this.refreshSourceList(ModManager.getLoadedMods());
@@ -86,8 +87,6 @@ public class RightPane extends BorderPane {
     public void refreshSourceList(List<Mod> mods){
         var sources = mods.stream().map(Mod::sourceFile).distinct().collect(Collectors.toList());
         sourcesList.getItems().clear();
-        sourcesList.getItems().addAll(sources);
+        sourcesList.getItems().addAll(sources.stream().map(Path::toString).toList());
     }
-
-
 }

@@ -7,6 +7,7 @@
         <groupId>com.opengg.modmanager</groupId>
         <version>0.0.3</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
     <artifactId>runtime</artifactId>
 
@@ -20,7 +21,7 @@
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.5</version>
+                <version>0.0.8</version>
                 <configuration>
                     <jlinkVerbose>true</jlinkVerbose>
                     <jlinkImageName>TTModManager</jlinkImageName>
@@ -71,16 +72,11 @@
             <artifactId>json</artifactId>
             <version>20201115</version>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>com.opengg.modmanager</groupId>
             <artifactId>diff</artifactId>
             <version>0.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.opengg.modmanager</groupId>
-            <artifactId>mod-applier</artifactId>
-            <version>0.0.3</version>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>

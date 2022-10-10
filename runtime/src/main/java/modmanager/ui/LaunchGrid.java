@@ -18,6 +18,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,8 +56,8 @@ public class LaunchGrid extends GridPane {
         applyNoRun.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         var commandList = new ComboBox<Tool>();
-        commandList.getItems().add(new Tool("Game Instance\\LegoStarWarsSaga.exe", "Lego Star Wars: The Complete Saga", true));
-        commandList.getItems().add(new Tool("Tools\\BrickBench\\run.bat", "BrickBench Level Editor", false));
+        commandList.getItems().add(new Tool(Path.of("Game Instance/LegoStarWarsSaga.exe"), "Lego Star Wars: The Complete Saga", true));
+        commandList.getItems().add(new Tool(Path.of("Tools/BrickBench/BrickBench.exe"), "BrickBench Level Editor", false));
         commandList.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         commandList.getSelectionModel().selectFirst();
         commandList.getSelectionModel().selectedItemProperty().addListener((opt, oldVal, newVal) -> {
@@ -128,7 +129,7 @@ public class LaunchGrid extends GridPane {
                 }
             }else{
                 try {
-                    getDesktop().open(new File(Util.getFromMainDirectory(selection.path)).getParentFile());
+                    getDesktop().open(Util.getFromMainDirectory(selection.path).getParent().toFile());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -151,11 +152,11 @@ public class LaunchGrid extends GridPane {
         this.add(applyNoRun, 1, 1, 1, 1);
     }
 
-    public void runSafe(String path){
+    public void runSafe(Path path){
         Desktop desktop = Desktop.getDesktop();
 
         try {
-            desktop.open(new File(path));
+            desktop.open(path.toFile());
         } catch (IOException e) {
             Platform.runLater(() -> {
                 var alert = new Alert(Alert.AlertType.ERROR);
@@ -165,13 +166,13 @@ public class LaunchGrid extends GridPane {
         }
     }
 
-    public void run(boolean fromMainDirectory, String path, String... args){
+    public void run(boolean fromMainDirectory, Path path, String... args){
         try {
-            var file = fromMainDirectory ? new File(Util.getFromMainDirectory(path)) : new File(path);
+            var file = fromMainDirectory ? Util.getFromMainDirectory(path) : path;
             var commands = new ArrayList<String>();
-            commands.add(file.getAbsolutePath());
+            commands.add(file.toAbsolutePath().toString());
             commands.addAll(List.of(args));
-            new ProcessBuilder().command(commands).directory(file.getParentFile()).start();
+            new ProcessBuilder().command(commands).directory(file.getParent().toFile()).start();
         } catch (IOException e) {
             Platform.runLater(() -> {
                 var alert = new Alert(Alert.AlertType.ERROR);
@@ -198,13 +199,13 @@ public class LaunchGrid extends GridPane {
         return choicePanel.showAndWait().stream().anyMatch(b -> b == ButtonType.YES);
     }
 
-    record Tool(String path, String name, boolean isGame){
+    record Tool(Path path, String name, boolean isGame){
 
         public String getName() {
             return name;
         }
 
-        public String getPath(){
+        public Path getPath(){
             return path;
         }
 

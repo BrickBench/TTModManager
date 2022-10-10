@@ -1,5 +1,6 @@
 package modmanager;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +11,6 @@ import org.sat4j.core.VecInt;
 import org.sat4j.maxsat.WeightedMaxSatDecorator;
 import org.sat4j.pb.SolverFactory;
 import org.sat4j.specs.ContradictionException;
-import org.sat4j.specs.IVecInt;
 import org.sat4j.specs.TimeoutException;
 
 public class ModSorter {
@@ -169,7 +169,7 @@ public class ModSorter {
     //Creates a mod wit the given ID and dependencies.
     //This exists to not include unnecessary fields for testing sorting.
     public static Mod quickMod(String id, String... dependencies){
-        return new Mod("","",id,"","","","",new SimpleBooleanProperty(true), Mod.Type.TT_MM,
+        return new Mod("","",id,"","",Path.of(""),Path.of(""),new SimpleBooleanProperty(true), Mod.Type.TT_MM,
                 new SimpleIntegerProperty(0), List.of(), List.of(dependencies));
     }
 

@@ -5,32 +5,36 @@ import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 public class ModListFileManager {
     public static void readModList(){
-        var file = new File(Util.getFromMainDirectory("mods.json"));
+        var file = Util.getFromMainDirectory("mods.json");
         try {
-            if(!file.exists()) file.createNewFile();
+            if (!Files.exists(file)) Files.createFile(file);
 
             BottomPane.log("Reading mod file");
-            String jsonTxt = IOUtils.toString(new FileInputStream(file), Charset.defaultCharset());
+            String jsonTxt = IOUtils.toString(new FileInputStream(file.toFile()), Charset.defaultCharset());
 
             if(jsonTxt.isEmpty()) return;
 
             var json = new JSONObject(jsonTxt);
 
             var mods = json.getJSONArray("mods");
-            var loadedSources = new LinkedHashMap<String, List<Mod>>();
+            var loadedSources = new LinkedHashMap<Path, List<Mod>>();
 
-            int idx = 0;
             for(var jmod : mods){
                 var jobj = (JSONObject) jmod;
                 var name = jobj.getString("id");
-                var source = jobj.getString("source");
+                var source = Path.of(jobj.getString("source"));
                 var enabled = jobj.getBoolean("enabled");
 
                 BottomPane.log("Searching for mod " + name);
@@ -41,7 +45,7 @@ public class ModListFileManager {
                     BottomPane.log("Found in existing source " + source);
                 }else{
                     try {
-                        sourceList = ModUtil.loadSource(new File(source), false);
+                        sourceList = ModUtil.loadSource(source, false);
                         loadedSources.put(source, sourceList);
                     }catch (IOException e){
                         continue;
@@ -59,7 +63,7 @@ public class ModListFileManager {
 
             BottomPane.log("Finished loading mod file");
             TTModManager.CURRENT.bottomPane.setProgressString("Finished loading mod file");
-            ModSorter.sortMods(ModManager.getLoadedMods());
+           // ModSorter.sortMods(ModManager.getLoadedMods());
 
         } catch (IOException e) {
             BottomPane.log("Failed to load mods.json file: " + e.getMessage());
@@ -68,7 +72,7 @@ public class ModListFileManager {
     }
 
     public static void writeModList(List<Mod> mods){
-        var file = new File(Util.getFromMainDirectory("mods.json"));
+        var file = Util.getFromMainDirectory("mods.json");
 
         var root = new JSONObject();
         var array = new JSONArray();
@@ -84,7 +88,7 @@ public class ModListFileManager {
 
         root.put("mods", array);
 
-        try(var writer = new BufferedWriter(new FileWriter(file))) {
+        try(var writer = new BufferedWriter(new FileWriter(file.toFile()))) {
             writer.write(root.toString());
         } catch (IOException e) {
             e.printStackTrace();

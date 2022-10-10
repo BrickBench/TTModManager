@@ -46,7 +46,7 @@ public class ModPane extends GridPane {
         this.author.setText("Made by " + mod.author());
         this.version.setText("Version " + mod.version());
         this.description.setText(mod.description());
-        this.source.setText(mod.sourceFile());
+        this.source.setText(mod.sourceFile().toString());
 
     }
 }

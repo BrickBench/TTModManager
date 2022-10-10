@@ -24,49 +24,53 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ModUtil {
-    public static List<Mod> loadSource(File path, boolean askForPerms) throws IOException {
-        BottomPane.log("Loading source " + path.getAbsolutePath());
-        var newSpace = createModSpace(path);
+    public static List<Mod> loadSource(Path path, boolean askForPerms) throws IOException {
+        BottomPane.log("Loading source " + path.toAbsolutePath());
+        var newSpace = createInternalModFolder(path);
+
         if(newSpace != null){
             return searchForMods(newSpace, path, askForPerms);
         }
+
         BottomPane.log("Failed to find source file " + path);
         return new ArrayList<>();
     }
 
-    private static File createModSpace(File path) throws IOException {
-        if(path.isFile()) {
-            var realPath = Util.getFromMainDirectory("Mods\\") + FilenameUtils.removeExtension(path.getName());
-            if (path.getAbsolutePath().toLowerCase().endsWith(".zip")) {
-                new ZipFile(path).extractAll(realPath);
-                return new File(realPath);
-            } else if (path.getAbsolutePath().toLowerCase().endsWith(".rar") || path.getAbsolutePath().toLowerCase().endsWith(".7zip")) {
-                ArchiveUtil.extract(path.getAbsolutePath(), realPath);
-                return new File(realPath);
+    private static Path createInternalModFolder(Path path) throws IOException {
+        if(Files.isRegularFile(path)) {
+            var realPath = Util.getFromMainDirectory("Mods\\") + FilenameUtils.removeExtension(path.getFileName().toString());
+
+            var ext = FilenameUtils.getExtension(path.getFileName().toString());
+            if (ext.equalsIgnoreCase("zip")) {
+                new ZipFile(path.toFile()).extractAll(realPath);
+                return Path.of(realPath);
+            } else if (ext.equalsIgnoreCase("7zip") || ext.equalsIgnoreCase("rar")) {
+                ArchiveUtil.extract(path.toAbsolutePath().toString(), realPath);
+                return Path.of(realPath);
             }else {
                 return null;
             }
-        } else if(path.isDirectory()){
+        } else if(Files.isDirectory(path)){
             return path;
         }
         return null;
     }
 
-    private static List<Mod> searchForMods(File search, File source, boolean askForPerms) throws IOException {
-        var allTTMMMods = Files.find(search.toPath(),
+    private static List<Mod> searchForMods(Path search, Path source, boolean askForPerms) throws IOException {
+        var allTTMMMods = Files.find(search,
                 Integer.MAX_VALUE,
                 (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().equalsIgnoreCase("TTModDef.json"))
                 .collect(Collectors.toList());
 
-        var allReloadedMods = Files.find(search.toPath(),
+        var allReloadedMods = Files.find(search,
                 Integer.MAX_VALUE,
                 (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().equalsIgnoreCase("ModConfig.json"))
                 .collect(Collectors.toList());
 
         if(allReloadedMods.isEmpty() && allTTMMMods.isEmpty()){
-            var modifiedFiles = getModifiedFiles(search.getAbsolutePath() + "\\");
-            return List.of(new Mod(source.getName(), "Unknown", source.getAbsolutePath(), "?", "Locally loaded file",
-                    source.getAbsolutePath(), search.getAbsolutePath() + "\\", new SimpleBooleanProperty(true), Mod.Type.RAW,
+            var modifiedFiles = getModifiedFiles(search.toAbsolutePath());
+            return List.of(new Mod(source.getFileName().toString(), "Unknown", source.toAbsolutePath().toString(), "?", "Locally loaded file",
+                    source.toAbsolutePath(), search.toAbsolutePath(), new SimpleBooleanProperty(true), Mod.Type.RAW,
                     new SimpleIntegerProperty(0), modifiedFiles, List.of()));
         }else{
             var mods = new ArrayList<Mod>();
@@ -83,7 +87,7 @@ public class ModUtil {
 
                 if(result.isPresent() && result.get() == ButtonType.YES) {
                     for(var modFile : allReloadedMods){
-                        var mod = parseReloadedMod(modFile, source.getAbsolutePath());
+                        var mod = parseReloadedMod(modFile, source.toAbsolutePath());
                         if(mod != null) mods.add(mod);
                     }
                 }
@@ -91,7 +95,7 @@ public class ModUtil {
 
             if(!allTTMMMods.isEmpty()){
                 for(var modFile : allTTMMMods){
-                    mods.addAll(parseTTMMFile(modFile, source.getAbsolutePath()));
+                    mods.addAll(parseTTMMFile(modFile, source.toAbsolutePath()));
                 }
             }
 
@@ -99,7 +103,7 @@ public class ModUtil {
         }
     }
 
-    private static Mod parseReloadedMod(Path source, String origin){
+    private static Mod parseReloadedMod(Path source, Path origin){
         try (var in = new FileInputStream(source.toFile())) {
             var modDef = new JSONObject(IOUtils.toString(in, Charset.defaultCharset()));
             var id = modDef.getString("ModId");
@@ -110,7 +114,7 @@ public class ModUtil {
 
             var deps = modDef.getJSONArray("ModDependencies");
             if(deps.toString().contains("reloaded.universal.redirector")){
-                var newDir = source.getParent().toString() + "\\Redirector\\";
+                var newDir = source.resolveSibling("Redirector");
                 var modifiedFiles = getModifiedFiles(newDir);
                 var usableDeps = new ArrayList<String>();
                 for(var dep : deps){
@@ -130,7 +134,7 @@ public class ModUtil {
         }
     }
 
-    private static List<Mod> parseTTMMFile(Path source, String origin){
+    private static List<Mod> parseTTMMFile(Path source, Path origin){
         try (var in = new FileInputStream(source.toFile())) {
             var jsonObj = new JSONObject(IOUtils.toString(in, Charset.defaultCharset()));
             var modList = jsonObj.getJSONArray("mods");
@@ -143,7 +147,7 @@ public class ModUtil {
                 var version = modDef.getString("version");
                 var desc = modDef.getString("description");
                 var author = modDef.getString("author");
-                var path = source.getParent().toString() + "\\" + modDef.getString("folder");
+                var path = source.resolveSibling(modDef.getString("folder"));
                 var modifiedFiles = getModifiedFiles(path);
                 var deps = new ArrayList<String>();
                 if(modDef.has("dependencies")){
@@ -162,11 +166,11 @@ public class ModUtil {
         }
     }
 
-    private static List<String> getModifiedFiles(String path) throws IOException {
-        return Files.find(Paths.get(path),
+    private static List<Path> getModifiedFiles(Path path) throws IOException {
+        return Files.find(path,
                 Integer.MAX_VALUE,
                 (filePath, fileAttr) -> fileAttr.isRegularFile())
-                .map(f -> f.toString().toLowerCase().replace(path.toLowerCase(), "").replace(".patch", ""))
+                .map(f -> Path.of(f.toString().toLowerCase().replace(path.toString().toLowerCase(), "").replace(".patch", "")))
                 .collect(Collectors.toList());
     }
 }

@@ -5,13 +5,14 @@ import javafx.scene.control.Alert;
 
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ModManager {
     private static List<Mod> modList = new ArrayList<>();
 
-    public static void addNewMod(File modFile){
+    public static void addNewMod(Path modFile){
         try{
             var mods = ModUtil.loadSource(modFile, true);
             for(var mod : mods){
@@ -55,7 +56,7 @@ public class ModManager {
 
                 for(var previousFile : modBefore.editedFiles()){
                     if(mod.editedFiles().contains(previousFile)){
-                        newConflict.conflictItems.add(previousFile);
+                        newConflict.conflictItems.add(previousFile.toString());
                     }
                 }
 

@@ -17,18 +17,18 @@ public class TextPatcher {
     static Pattern charCollect = Pattern.compile("collect\\s*\"(.*?)\"");
     public static int nextCharacter = 2009;
 
-    public static void patchTextFile(String mod, String dst, String original, PatcherState state){
-        switch (new File(mod).getName().toLowerCase(Locale.ROOT)){
+    public static void patchTextFile(Path mod, Path dst, Path original, PatcherState state){
+        switch (mod.getFileName().toString().toLowerCase(Locale.ROOT)){
             case "chars.txt" -> patchChars(mod, dst, state);
             case "collection.txt" -> patchCollections(mod, dst, original);
             case "english.txt" -> patchEnglish(mod, dst, original, state);
         }
     }
 
-    private static void patchCollections(String mod, String dst, String original){
+    private static void patchCollections(Path mod, Path dst, Path original){
         try {
-            var sourceData = FileUtils.readFileToString(new File(mod),  Charset.defaultCharset());
-            var originalData = FileUtils.readFileToString(new File(original),  Charset.defaultCharset());
+            var sourceData = FileUtils.readFileToString(mod.toFile(),  Charset.defaultCharset());
+            var originalData = FileUtils.readFileToString(original.toFile(),  Charset.defaultCharset());
 
             var srcLines = sourceData.split("\n");
             var originalLines = originalData.split("\n");
@@ -43,18 +43,18 @@ public class TextPatcher {
             }
 
             var newText = "\n\n" + String.join("\n", diff);
-            Files.write(Paths.get(dst), newText.getBytes(), StandardOpenOption.APPEND);
+            Files.write(dst, newText.getBytes(), StandardOpenOption.APPEND);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
 
-    private static void patchEnglish(String mod, String dst, String original, PatcherState state){
+    private static void patchEnglish(Path mod, Path dst, Path original, PatcherState state){
         try {
-            var sourceData = FileUtils.readFileToString(new File(mod),  Charset.defaultCharset());
-            var targetData = FileUtils.readFileToString(new File(dst),  Charset.defaultCharset());
-            var originalData = FileUtils.readFileToString(new File(original),  Charset.defaultCharset());
+            var sourceData = FileUtils.readFileToString(mod.toFile(),  Charset.defaultCharset());
+            var targetData = FileUtils.readFileToString(dst.toFile(),  Charset.defaultCharset());
+            var originalData = FileUtils.readFileToString(original.toFile(),  Charset.defaultCharset());
 
             var newChars = tokenizeLang(sourceData);
             var targets = tokenizeLang(targetData);
@@ -80,7 +80,7 @@ public class TextPatcher {
             }
             var finalString = strB.toString();
 
-            FileUtils.writeStringToFile(new File(dst), finalString, Charset.defaultCharset());
+            FileUtils.writeStringToFile(dst.toFile(), finalString, Charset.defaultCharset());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -109,23 +109,23 @@ public class TextPatcher {
         return langLines;
     }
 
-    static record DirFile(String dir, String file){}
-    private static void patchChars(String mod, String dst, PatcherState state){
+    static record DirFile(Path dir, Path file){}
+    private static void patchChars(Path mod, Path dst, PatcherState state){
         var originalChars = new ArrayList<DirFile>();
         var newChars = new ArrayList<DirFile>();
 
         try {
-            var sourceData = FileUtils.readFileToString(new File(mod),  Charset.defaultCharset());
-            var targetData = FileUtils.readFileToString(new File(dst),  Charset.defaultCharset());
+            var sourceData = FileUtils.readFileToString(mod.toFile(),  Charset.defaultCharset());
+            var targetData = FileUtils.readFileToString(dst.toFile(),  Charset.defaultCharset());
 
             var sourceMatch = charDetect.matcher(sourceData);
             while (sourceMatch.find()) {
-                newChars.add(new DirFile(sourceMatch.group(1), sourceMatch.group(2)));
+                newChars.add(new DirFile(Path.of(sourceMatch.group(1)), Path.of(sourceMatch.group(2))));
             }
 
             var targetMatch = charDetect.matcher(targetData);
             while (targetMatch.find()) {
-                originalChars.add(new DirFile(targetMatch.group(1), targetMatch.group(2)));
+                originalChars.add(new DirFile(Path.of(targetMatch.group(1)), Path.of(targetMatch.group(2))));
             }
 
             var merged = new LinkedHashSet<DirFile>();
@@ -148,7 +148,7 @@ public class TextPatcher {
 
             var finalString = strB.toString();
 
-            FileUtils.writeStringToFile(new File(dst), finalString, Charset.defaultCharset());
+            FileUtils.writeStringToFile(dst.toFile(), finalString, Charset.defaultCharset());
         } catch (IOException e) {
             e.printStackTrace();
         }

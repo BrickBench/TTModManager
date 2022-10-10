@@ -3,12 +3,13 @@ package modmanager;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 
+import java.nio.file.Path;
 import java.util.List;
 
 
 //Represents a mod
-public record Mod(String name, String author, String id, String version, String description, String sourceFile,
-                  String rootPath, BooleanProperty enabled, Type type, IntegerProperty modOrder, List<String> editedFiles, List<String> dependencies) {
+public record Mod(String name, String author, String id, String version, String description, Path sourceFile,
+                  Path rootPath, BooleanProperty enabled, Type type, IntegerProperty modOrder, List<Path> editedFiles, List<String> dependencies) {
 
     public boolean isEnabled() {
         return enabled.getValue();

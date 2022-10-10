@@ -1,18 +1,18 @@
 package modmanager.ui;
 
-import modmanager.Mod;
-import modmanager.ModManager;
-import modmanager.TTModManager;
+import java.util.HashMap;
+import java.util.List;
+
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-
-import java.util.HashMap;
-import java.util.List;
+import modmanager.Mod;
+import modmanager.ModManager;
+import modmanager.TTModManager;
 
 public class ModTable extends VBox {
     private final TableView<Mod> table;
@@ -32,19 +32,19 @@ public class ModTable extends VBox {
         enabled.setStyle("-fx-table-cell-border-color: transparent;");
 
         var name = new TableColumn<Mod, String>("Mod Name");
-        name.setCellValueFactory(new PropertyValueFactory<>("name"));
+        name.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().name()));
 
         var author = new TableColumn<Mod, String>("Mod Author");
-        author.setCellValueFactory(new PropertyValueFactory<>("author"));
+        author.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().author()));
 
         var version = new TableColumn<Mod, String>("Version");
-        version.setCellValueFactory(new PropertyValueFactory<>("version"));
+        version.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().version()));
 
         var source = new TableColumn<Mod, String>("Source File");
-        source.setCellValueFactory(new PropertyValueFactory<>("sourceFile"));
+        source.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().sourceFile().toString()));
 
-        var order = new TableColumn<Mod, Integer>("Load Order");
-        order.setCellValueFactory(new PropertyValueFactory<>("modOrder"));
+        var order = new TableColumn<Mod, String>("Load Order");
+        order.setCellValueFactory(p -> new SimpleStringProperty(Integer.toString(p.getValue().getModOrder())));
         order.setMinWidth(40);
         order.setMaxWidth(100);
         order.setResizable(false);

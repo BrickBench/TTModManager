@@ -3,10 +3,10 @@ package modmanager;
 import modmanager.ui.BottomPane;
 import javafx.scene.control.Alert;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Properties;
 
 public class ManagerProperties {
@@ -16,25 +16,18 @@ public class ManagerProperties {
         PROPERTIES = new Properties();
         var file = Util.getFromMainDirectory("settings.cfg");
         try {
-            if(!new File(file).exists()){
-                new File(file).getParentFile().mkdirs();
-                new File(file).createNewFile();
+            if(!Files.exists(file)){
+                Files.createDirectories(file.getParent());
+                Files.createFile(file);
 
-                var in = new FileInputStream(file);
-
-                PROPERTIES.load(in);
-                PROPERTIES.put("outputInstall", Util.getFromMainDirectory("Game Instance"));
-
-                in.close();
+                PROPERTIES.put("outputInstall", Util.getFromMainDirectory("Game Instance").toString());
 
                 save();
             }else{
-                var in = new FileInputStream(file);
-
-                PROPERTIES.load(in);
-                PROPERTIES.replaceAll((f1, f2) -> f2.toString().replace("\\\\", "\\"));
-
-                in.close();
+                try(var in = new FileInputStream(file.toFile())) {
+                    PROPERTIES.load(in);
+                    PROPERTIES.replaceAll((f1, f2) -> f2.toString().replace("\\\\", "\\"));
+                }
             }
         } catch (IOException e) {
             var alert = new Alert(Alert.AlertType.ERROR);
@@ -44,7 +37,7 @@ public class ManagerProperties {
     }
 
     public static void save(){
-        try(var out = new FileOutputStream(Util.getFromMainDirectory("settings.cfg"))){
+        try(var out = new FileOutputStream(Util.getFromMainDirectory("settings.cfg").toFile())){
             PROPERTIES.store(out, "Settings");
         } catch (IOException e) {
             BottomPane.log("Failed to save settings file");
