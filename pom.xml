@@ -17,8 +17,6 @@
     <modules>
         <module>diff</module>
         <module>runtime</module>
-        <module>mod-applier</module>
-        <module>mod-applier</module>
     </modules>
 
     <build>
