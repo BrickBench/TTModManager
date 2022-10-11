@@ -4,7 +4,6 @@ import modmanager.ManagerProperties;
 import modmanager.ui.BottomPane;
 import org.apache.commons.io.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.*;
@@ -18,7 +17,7 @@ public class TextPatcher {
     public static int nextCharacter = 2009;
 
     public static void patchTextFile(Path mod, Path dst, Path original, PatcherState state){
-        switch (mod.getFileName().toString().toLowerCase(Locale.ROOT)){
+        switch (mod.getFileName().toString().toLowerCase()){
             case "chars.txt" -> patchChars(mod, dst, state);
             case "collection.txt" -> patchCollections(mod, dst, original);
             case "english.txt" -> patchEnglish(mod, dst, original, state);
@@ -157,9 +156,10 @@ public class TextPatcher {
     private static void copyLRModeCharacters(List<DirFile> indices){
         for(var character : indices){
             try {
-                if(new File(ManagerProperties.PROPERTIES.getProperty("outputInstall") + "\\chars\\" + character.dir + "\\" + character.file + "_LR_PC.GHG").exists()) continue;
-                Files.copy(Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall") + "\\chars\\" + character.dir + "\\" + character.file + "_PC.GHG"),
-                           Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall") + "\\chars\\" + character.dir + "\\" + character.file + "_LR_PC.GHG"), StandardCopyOption.REPLACE_EXISTING);
+                if (!Files.exists(Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall")).resolve("chars").resolve(character.dir).resolve(character.file + "_LR_PC.GHG"))) {
+                    Files.copy(Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall")).resolve("chars").resolve(character.dir).resolve(character.file + "_PC.GHG"),
+                               Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall")).resolve("chars").resolve(character.dir).resolve(character.file + "_LR_PC.GHG"), StandardCopyOption.REPLACE_EXISTING);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -169,8 +169,8 @@ public class TextPatcher {
     private static void repairNewCharacterIndices(List<DirFile> indices, Map<Integer, Integer> characterIDChanges){
         for(var character : indices){
             try {
-                var file = ManagerProperties.PROPERTIES.getProperty("outputInstall") + "\\chars\\" + character.dir + "\\" + character.file + ".txt";
-                var sourceData = FileUtils.readFileToString(new File(file),  Charset.defaultCharset());
+                var file = Path.of(ManagerProperties.PROPERTIES.getProperty("outputInstall")).resolve("chars").resolve(character.dir).resolve(character.file + ".txt");
+                var sourceData = FileUtils.readFileToString(file.toFile(),  Charset.defaultCharset());
 
                 var matcher = charIndex.matcher(sourceData);
                 if(matcher.find()){
@@ -187,7 +187,7 @@ public class TextPatcher {
                         nextCharacter++;
                     }
 
-                    FileUtils.writeStringToFile(new File(file),  sourceData, Charset.defaultCharset());
+                    FileUtils.writeStringToFile(file.toFile(),  sourceData, Charset.defaultCharset());
                 }
             } catch (IOException e) {
                 e.printStackTrace();

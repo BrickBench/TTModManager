@@ -150,7 +150,7 @@ public class TTModManager extends Application {
         BottomPane.log("Copying mod in place: " + mod.id());
         bottomPane.setProgressString("Copying mod " + mod.rootPath());
 
-        var softwareMergedFiles = List.of(Path.of("chars/chars.txt"), Path.of("chars/collection.txt"), Path.of("stuff/text/english.txt"));
+        var softwareMergedFiles = List.of(Path.of("CHARS/CHARS.TXT"), Path.of("CHARS/COLLECTION.TXT"), Path.of("STUFF/TEXT/ENGLISH.TXT"));
 
         for(var textFile : softwareMergedFiles){
             if(mod.editedFiles().contains(textFile)){

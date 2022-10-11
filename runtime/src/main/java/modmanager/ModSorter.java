@@ -10,8 +10,6 @@ import javafx.beans.property.SimpleIntegerProperty;
 import org.sat4j.core.VecInt;
 import org.sat4j.maxsat.WeightedMaxSatDecorator;
 import org.sat4j.pb.SolverFactory;
-import org.sat4j.specs.ContradictionException;
-import org.sat4j.specs.TimeoutException;
 
 public class ModSorter {
     public static List<Mod> sortMods(List<Mod> mods) {
@@ -42,7 +40,7 @@ public class ModSorter {
                     var individualClause = modVariablesMap.get(new ModOrder(i, j));
                     solver.addSoftClause(new VecInt(new int[]{individualClause}));
 
-                } catch (ContradictionException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -69,7 +67,7 @@ public class ModSorter {
 
                 try {
                     solver.addHardClause(new VecInt(new int[]{variable}));
-                } catch (ContradictionException e) {
+                } catch (Exception e) {
                     //Direct circular dependency, returning
                     return mods;
                 }
@@ -92,7 +90,7 @@ public class ModSorter {
                     try{
                         solver.addHardClause(new VecInt(new int[]{-ijVal, -jkVal, ikVal}));
                         solver.addHardClause(new VecInt(new int[]{ijVal, jkVal, -ikVal}));
-                    } catch (ContradictionException e) {
+                    } catch (Exception e) {
                         //Indirect circular dependency, returning
                         return mods;
                     }
@@ -153,7 +151,7 @@ public class ModSorter {
                     }
                 }
             }
-        }catch (TimeoutException e) {
+        }catch (Exception e) {
             e.printStackTrace();
         }
 

@@ -1,9 +1,7 @@
 package modmanager.ui;
 
-import javafx.geometry.HPos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 
 public class BottomBar extends HBox {

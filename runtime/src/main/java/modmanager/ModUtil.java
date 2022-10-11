@@ -1,27 +1,26 @@
 package modmanager;
 
 
-import modmanager.ui.BottomPane;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import net.lingala.zip4j.ZipFile;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
-import org.json.JSONObject;
-
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONObject;
+
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import modmanager.ui.BottomPane;
+//import net.lingala.zip4j.ZipFile;
 
 public class ModUtil {
     public static List<Mod> loadSource(Path path, boolean askForPerms) throws IOException {
@@ -32,21 +31,18 @@ public class ModUtil {
             return searchForMods(newSpace, path, askForPerms);
         }
 
-        BottomPane.log("Failed to find source file " + path);
+        BottomPane.log("Failed to extract/find source file " + path);
         return new ArrayList<>();
     }
 
     private static Path createInternalModFolder(Path path) throws IOException {
         if(Files.isRegularFile(path)) {
-            var realPath = Util.getFromMainDirectory("Mods\\") + FilenameUtils.removeExtension(path.getFileName().toString());
+            var realPath = Util.getFromMainDirectory("Mods").resolve(FilenameUtils.removeExtension(path.getFileName().toString()));
 
             var ext = FilenameUtils.getExtension(path.getFileName().toString());
-            if (ext.equalsIgnoreCase("zip")) {
-                new ZipFile(path.toFile()).extractAll(realPath);
-                return Path.of(realPath);
-            } else if (ext.equalsIgnoreCase("7zip") || ext.equalsIgnoreCase("rar")) {
-                ArchiveUtil.extract(path.toAbsolutePath().toString(), realPath);
-                return Path.of(realPath);
+             if (ext.equalsIgnoreCase("zip") || ext.equalsIgnoreCase("7z") || ext.equalsIgnoreCase("rar")) {
+                ArchiveUtil.extract(path.toAbsolutePath().toString(), realPath.toAbsolutePath().toString());
+                return realPath;
             }else {
                 return null;
             }

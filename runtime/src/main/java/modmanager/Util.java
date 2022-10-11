@@ -75,7 +75,8 @@ public class Util {
 
     public static Path getFromMainDirectory(Path path){
         if (SystemUtils.IS_OS_LINUX) {
-            return Path.of(System.getenv("XDG_DATA_HOME")).resolve("ttmodmanager").resolve(path);
+            var xdgHome = Objects.requireNonNullElse(System.getenv("XDG_DATA_HOME"), System.getenv("HOME") + "/.local/share/");
+            return Path.of(xdgHome).resolve("ttmodmanager").resolve(path);
         } else {
             return FileSystemView.getFileSystemView().getDefaultDirectory().toPath().resolve("TT Mod Manager").resolve(path);
         }
@@ -89,7 +90,7 @@ public class Util {
                 Files.delete(path);
             }
         } catch (IOException e) {
-            BottomPane.log("Failed deleting symlink:" + e.getMessage());
+            BottomPane.log("Failed deleting symlink: " + e.getMessage());
         } 
     }
 
